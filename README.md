@@ -4,12 +4,13 @@ A symbolic fuzzer tool capable of generating input values symbolically for Pytho
 
 
 ### Installation
-
-
-### How To Run
+  * `git clone https://github.com/allenmcasey/symbolic-fuzzer.git`
   * `python3 -m venv venv_name`
   * `source venv_name/bin/activate`
+  * `cd symbolic-fuzzer`
   * `pip install -r requirements.txt`
+
+### How To Run
   * `python src/run.py -i examples/check_triangle.py`
 
 
