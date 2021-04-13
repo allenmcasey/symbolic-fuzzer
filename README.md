@@ -9,6 +9,7 @@ A symbolic fuzzer tool capable of generating input values symbolically for Pytho
 ### How To Run
   * `python3 -m venv venv_name`
   * `source venv_name/bin/activate`
+  * `pip install -r requirements.txt`
   * `python src/run.py -i examples/check_triangle.py`
 
 
