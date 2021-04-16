@@ -30,7 +30,7 @@ for node in ast.walk(astree):
 		function_names.append(node.name)
 		function_CFGs[node.name] = gen_cfg(astor.to_source(node))
 
-# print(code_string)
+print(code_string)
 # print(function_names)
 # print(function_CFGs)
 
@@ -40,7 +40,7 @@ for node in ast.walk(astree):
 # Generate and print the path constraints in the program
 # Each constraint should be traceable to the part of code that created the constraint
 
-from fuzzingbook.SymbolicFuzzer_original import SimpleSymbolicFuzzer
+from fuzzingbook.SymbolicFuzzer_modified import SimpleSymbolicFuzzer
 symfz_ct = SimpleSymbolicFuzzer(code_string, function_names[0])
 
 # from fuzzingbook.SymbolicFuzzer_original import SimpleSymbolicFuzzer
