@@ -260,7 +260,7 @@ class SimpleSymbolicFuzzer(Fuzzer):
         self.used_variables = declarations(ast.parse(arbitary_code))
 
         # a list of arguments; ex. ['a', 'b', 'c']
-        self.fn_args = ['a', 'b', 'c']
+        self.fn_args = list(self.used_variables.keys())
 
         self.z3 = z3.Solver()
 

@@ -40,7 +40,8 @@ print(code_string)
 # Generate and print the path constraints in the program
 # Each constraint should be traceable to the part of code that created the constraint
 
-from fuzzingbook.SymbolicFuzzer_modified import SimpleSymbolicFuzzer
+# from fuzzingbook.SymbolicFuzzer_modified import SimpleSymbolicFuzzer
+from SymbolicFuzzer import SimpleSymbolicFuzzer
 symfz_ct = SimpleSymbolicFuzzer(code_string, function_names[0])
 
 # from fuzzingbook.SymbolicFuzzer_original import SimpleSymbolicFuzzer
