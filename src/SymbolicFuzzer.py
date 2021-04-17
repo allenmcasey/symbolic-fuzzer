@@ -248,16 +248,19 @@ MAX_ITER = 100
 
 class SimpleSymbolicFuzzer(Fuzzer):
 
-    def __init__(self, arbitary_code, fn_name, **kwargs):
-        self.fn_name = fn_name
-        py_cfg = PyCFG()
-        py_cfg.gen_cfg(arbitary_code)
-
-        print(py_cfg)
-        self.fnenter, self.fnexit = py_cfg.functions[self.fn_name]
+    def __init__(self, arbitary_code, function_names, index, py_cfg, **kwargs):
+        self.fn_name = function_names[index]
+        self.function_names = function_names
+        # py_cfg = PyCFG()
+        # py_cfg.gen_cfg(arbitary_code)
+        # py_cfg = function_CFGs[fn_name]
+        self.py_cfg = py_cfg
+        # print(py_cfg)
+        self.fnenter, self.fnexit = self.py_cfg.functions[self.fn_name]
 
         # a dictionary of used variables; ex. {'a': 'z3.Int', 'b': 'z3.Int', 'c': 'z3.Int'}
         self.used_variables = declarations(ast.parse(arbitary_code))
+        # self.used_variables = {'a': 'z3.Int', 'b': 'z3.Int', 'c': 'z3.Int', 'num': 'z3.Int'}
 
         # a list of arguments; ex. ['a', 'b', 'c']
         self.fn_args = list(self.used_variables.keys())
@@ -277,13 +280,28 @@ class SimpleSymbolicFuzzer(Fuzzer):
         self._options = kwargs
 
     def get_all_paths(self, fenter, depth=0):
+        
         if depth > self.max_depth:
             raise Exception('Maximum depth exceeded')
         if not fenter.children:
             return [[(0, fenter)]]
 
         fnpaths = []
+
         for idx, child in enumerate(fenter.children):
+            # print(child, type(child))
+            # for fn_name in self.function_names:
+            #     if fn_name != self.fn_name and fn_name in child.source():
+            #         print(fn_name)
+            #         temp_fnenter, temp_fnexit = self.py_cfg.functions[fn_name]
+            #         child_paths = self.get_all_paths(temp_fnenter, depth + 1)
+            #         # for path in child_paths:
+            #             # In a conditional branch, idx is 0 for IF, and 1 for Else
+            #             # fnpaths.append([(idx, temp_fnenter)] + path)
+            #         continue
+            #         # symfz_ct = SimpleSymbolicFuzzer(code_string, function_names, 0, py_cfg)
+            #         # paths = symfz_ct.get_all_paths(symfz_ct.fnenter)
+
             child_paths = self.get_all_paths(child, depth + 1)
             for path in child_paths:
                 # In a conditional branch, idx is 0 for IF, and 1 for Else
@@ -293,6 +311,7 @@ class SimpleSymbolicFuzzer(Fuzzer):
     def process(self):
         self.paths = self.get_all_paths(self.fnenter)
         self.last_path = len(self.paths)
+
 
     def extract_constraints(self, path):
         predicates = []

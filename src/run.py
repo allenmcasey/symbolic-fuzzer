@@ -4,7 +4,7 @@ import os
 import tempfile
 import ast
 import astor
-from fuzzingbook.ControlFlow import gen_cfg
+from fuzzingbook.ControlFlow import gen_cfg, PyCFG
 
 # ============================ Arguments ============================
 parser = argparse.ArgumentParser(description='Argument parser')
@@ -19,6 +19,7 @@ args = parser.parse_args()
 input_program = args.input
 function_names = []
 function_CFGs = {}
+py_cfg = PyCFG()
 
 # create AST from source file; get string
 astree = astor.parse_file(input_program)
@@ -26,11 +27,11 @@ code_string = astor.to_source(astree)
 
 # get CFG of each defined fn
 for node in ast.walk(astree):
-	if isinstance(node, ast.FunctionDef):
-		function_names.append(node.name)
-		function_CFGs[node.name] = gen_cfg(astor.to_source(node))
+    if isinstance(node, ast.FunctionDef):
+        function_names.append(node.name)
+        function_CFGs[node.name] = py_cfg.gen_cfg(astor.to_source(node))
 
-print(code_string)
+# print(code_string)
 # print(function_names)
 # print(function_CFGs)
 
@@ -41,17 +42,20 @@ print(code_string)
 # Each constraint should be traceable to the part of code that created the constraint
 
 # from fuzzingbook.SymbolicFuzzer_modified import SimpleSymbolicFuzzer
+index = 2
 from SymbolicFuzzer import SimpleSymbolicFuzzer
-symfz_ct = SimpleSymbolicFuzzer(code_string, function_names[0])
+symfz_ct = SimpleSymbolicFuzzer(code_string, function_names, index, py_cfg)
 
 # from fuzzingbook.SymbolicFuzzer_original import SimpleSymbolicFuzzer
 # symfz_ct = SimpleSymbolicFuzzer(check_triangle)
 
 paths = symfz_ct.get_all_paths(symfz_ct.fnenter)
-print(len(paths))
-print(paths[0])
-for item in paths[0]:
-	print(item)
+print('---------------------------- ' + str(function_names[index])+ ' ----------------------------')
+print("Number of paths: ", len(paths))
+for i in range(len(paths)):
+    print(' ----------- path: ' + str(i)+ '----------- ')
+    for item in paths[i]:
+        print(item[0], ' --- ', item[1])
 
 
 # ============================ Analysis ============================
