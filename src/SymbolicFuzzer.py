@@ -27,8 +27,6 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# TODO: test this with the run.py file
-
 import sys
 import inspect
 import z3
@@ -191,12 +189,23 @@ def declarations(astnode, hm=None):
         hm.update(dict(Function_Summaries[name]['vars']))
     elif isinstance(astnode, ast.AnnAssign):
         assert isinstance(astnode.target, ast.Name)
-        hm[astnode.target.id] = translate_to_z3_name(astnode.annotation.id)
+        if isinstance(astnode.value, ast.List):
+
+            if isinstance(astnode.value.elts[0], ast.Num):
+                element_type = type(astnode.value.elts[0].n)
+            else:
+                element_type = type(astnode.value.elts[0].s)
+
+            list_name = astnode.target.id
+            for i in range(0, len(astnode.value.elts)):
+                hm[list_name + "[%d]" % i] = translate_to_z3_name(element_type.__name__)
+        else:
+            hm[astnode.target.id] = translate_to_z3_name(astnode.annotation.id)
     elif isinstance(astnode, ast.Assign):
-        # verify it is already defined
-        for t in astnode.targets:
-            assert isinstance(t, ast.Name)
-            assert t.id in hm
+        if not isinstance(astnode.targets[0], ast.Subscript):
+            for t in astnode.targets:
+                assert isinstance(t, ast.Name)
+                assert t.id in hm
     elif isinstance(astnode, ast.AugAssign):
         assert isinstance(astnode.target, ast.Name)
         assert astnode.target.id in hm
@@ -248,22 +257,18 @@ MAX_ITER = 100
 
 class SimpleSymbolicFuzzer(Fuzzer):
 
-    def __init__(self, arbitary_code, function_names, index, py_cfg, **kwargs):
-        self.fn_name = function_names[index]
-        self.function_names = function_names
-        # py_cfg = PyCFG()
-        # py_cfg.gen_cfg(arbitary_code)
-        # py_cfg = function_CFGs[fn_name]
-        self.py_cfg = py_cfg
-        # print(py_cfg)
-        self.fnenter, self.fnexit = self.py_cfg.functions[self.fn_name]
+    def __init__(self, arbitary_code, fn_name, **kwargs):
+        self.fn_name = fn_name
+        py_cfg = PyCFG()
+        py_cfg.gen_cfg(arbitary_code)
+
+        self.fnenter, self.fnexit = py_cfg.functions[self.fn_name]
 
         # a dictionary of used variables; ex. {'a': 'z3.Int', 'b': 'z3.Int', 'c': 'z3.Int'}
         self.used_variables = declarations(ast.parse(arbitary_code))
-        # self.used_variables = {'a': 'z3.Int', 'b': 'z3.Int', 'c': 'z3.Int', 'num': 'z3.Int'}
 
         # a list of arguments; ex. ['a', 'b', 'c']
-        self.fn_args = list(self.used_variables.keys())
+        self.fn_args = ['a', 'b', 'c']
 
         self.z3 = z3.Solver()
 
@@ -280,28 +285,13 @@ class SimpleSymbolicFuzzer(Fuzzer):
         self._options = kwargs
 
     def get_all_paths(self, fenter, depth=0):
-        
         if depth > self.max_depth:
             raise Exception('Maximum depth exceeded')
         if not fenter.children:
             return [[(0, fenter)]]
 
         fnpaths = []
-
         for idx, child in enumerate(fenter.children):
-            # print(child, type(child))
-            # for fn_name in self.function_names:
-            #     if fn_name != self.fn_name and fn_name in child.source():
-            #         print(fn_name)
-            #         temp_fnenter, temp_fnexit = self.py_cfg.functions[fn_name]
-            #         child_paths = self.get_all_paths(temp_fnenter, depth + 1)
-            #         # for path in child_paths:
-            #             # In a conditional branch, idx is 0 for IF, and 1 for Else
-            #             # fnpaths.append([(idx, temp_fnenter)] + path)
-            #         continue
-            #         # symfz_ct = SimpleSymbolicFuzzer(code_string, function_names, 0, py_cfg)
-            #         # paths = symfz_ct.get_all_paths(symfz_ct.fnenter)
-
             child_paths = self.get_all_paths(child, depth + 1)
             for path in child_paths:
                 # In a conditional branch, idx is 0 for IF, and 1 for Else
@@ -311,7 +301,6 @@ class SimpleSymbolicFuzzer(Fuzzer):
     def process(self):
         self.paths = self.get_all_paths(self.fnenter)
         self.last_path = len(self.paths)
-
 
     def extract_constraints(self, path):
         predicates = []
@@ -402,6 +391,12 @@ def rename_variables(astnode, env):
             env[astnode.id] = 0
         num = env[astnode.id]
         return ast.Name('_%s_%d' % (astnode.id, num), astnode.ctx)
+    elif isinstance(astnode, ast.Subscript):
+        name = to_src(astnode)
+        if name not in env:
+            env[name] = 0
+        num = env[name]
+        return ast.Name('_%s_%d' % (name, num), astnode.ctx)
     elif isinstance(astnode, ast.Return):
         return ast.Return(rename_variables(astnode.value, env))
     else:
@@ -428,19 +423,31 @@ def to_single_assignment_predicates(path):
             if node.order != 0:
                 assert node.order == 1
                 new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
+
         elif isinstance(ast_node, ast.AnnAssign):
-            assigned = ast_node.target.id
-            val = [rename_variables(ast_node.value, env)]
-            env[assigned] = 0 if assigned not in env else env[assigned] + 1
-            target = ast.Name('_%s_%d' %
-                              (ast_node.target.id, env[assigned]), None)
-            new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
+            if isinstance(ast_node.value, ast.List):
+                for idx, element in enumerate(ast_node.value.elts):
+                    assigned = ast_node.target.id + "[" + str(idx) + "]"
+                    val = [rename_variables(element, env)]
+                    env[assigned] = 0 if assigned not in env else env[assigned] + 1
+                    target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
+                    new_path.append(ast.Expr(ast.Compare(target, [ast.Eq()], val)))
+                pass
+            else:
+                assigned = ast_node.target.id
+                val = [rename_variables(ast_node.value, env)]
+                env[assigned] = 0 if assigned not in env else env[assigned] + 1
+                target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
+                new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
+
         elif isinstance(ast_node, ast.Assign):
-            assigned = ast_node.targets[0].id
+            if isinstance(ast_node.targets[0], ast.Subscript):
+                assigned = to_src(ast_node.targets[0])
+            else:
+                assigned = ast_node.targets[0].id
             val = [rename_variables(ast_node.value, env)]
             env[assigned] = 0 if assigned not in env else env[assigned] + 1
-            target = ast.Name('_%s_%d' %
-                              (ast_node.targets[0].id, env[assigned]), None)
+            target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
             new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
         elif isinstance(ast_node, (ast.Return, ast.Pass)):
             new_node = None
