@@ -41,14 +41,10 @@ for node in ast.walk(astree):
 # Generate and print the path constraints in the program
 # Each constraint should be traceable to the part of code that created the constraint
 
-# from fuzzingbook.SymbolicFuzzer_modified import SimpleSymbolicFuzzer
+# NOTE: Simple fuzzer will NOT work with test_list.py
 index = 1
 from SymbolicFuzzer import SimpleSymbolicFuzzer
 symfz_ct = SimpleSymbolicFuzzer(code_string, function_names, index, py_cfg)
-
-# from fuzzingbook.SymbolicFuzzer_original import SimpleSymbolicFuzzer
-# symfz_ct = SimpleSymbolicFuzzer(check_triangle)
-
 paths = symfz_ct.get_all_paths(symfz_ct.fnenter)
 
 #TODO need a graph to link functions once there is an external function call
@@ -63,13 +59,13 @@ for i in range(len(paths)):
     for item in paths[i]:
         print(item[0], ' --- ', item[1])
 
-
-# from SymbolicFuzzer import AdvancedSymbolicFuzzer
-# asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names[0])
-# print(asymfz_ct.used_variables)
-# paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
-# for path in paths:
-# 	print(asymfz_ct.extract_constraints(path.get_path_to_root()))
+index = 0
+from SymbolicFuzzer import AdvancedSymbolicFuzzer
+asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg)
+print(asymfz_ct.used_variables)
+paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
+for path in paths:
+    print(asymfz_ct.extract_constraints(path.get_path_to_root()))
 
 # ============================ Analysis ============================
 # If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to.

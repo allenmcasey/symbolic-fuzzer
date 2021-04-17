@@ -217,7 +217,7 @@ def declarations(astnode, hm=None):
     elif isinstance(astnode, ast.Return):
         pass
     else:
-        raise Exception(str(astnode))
+        raise Exception(to_src(astnode))
     return hm
 
 
