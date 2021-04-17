@@ -257,8 +257,8 @@ MAX_ITER = 100
 
 class SimpleSymbolicFuzzer(Fuzzer):
 
-    def __init__(self, arbitary_code, fn_name, **kwargs):
-        def __init__(self, arbitary_code, function_names, index, py_cfg, **kwargs):
+    def __init__(self, arbitary_code, function_names, index, py_cfg, **kwargs):
+
         self.fn_name = function_names[index]
         self.function_names = function_names
         # py_cfg = PyCFG()
