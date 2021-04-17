@@ -27,9 +27,9 @@ code_string = astor.to_source(astree)
 
 # get CFG of each defined fn
 for node in ast.walk(astree):
-    if isinstance(node, ast.FunctionDef):
-        function_names.append(node.name)
-        function_CFGs[node.name] = py_cfg.gen_cfg(astor.to_source(node))
+	if isinstance(node, ast.FunctionDef):
+		function_names.append(node.name)
+		function_CFGs[node.name] = py_cfg.gen_cfg(astor.to_source(node))
 
 # print(code_string)
 # print(function_names)
@@ -63,6 +63,13 @@ for i in range(len(paths)):
     for item in paths[i]:
         print(item[0], ' --- ', item[1])
 
+
+from SymbolicFuzzer import AdvancedSymbolicFuzzer
+asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names[0])
+print(asymfz_ct.used_variables)
+paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
+# for path in paths:
+# 	print(asymfz_ct.extract_constraints(path.get_path_to_root()))
 
 # ============================ Analysis ============================
 # If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to.
