@@ -319,7 +319,7 @@ class SimpleSymbolicFuzzer(Fuzzer):
             if isinstance(elt.ast_node, ast.AnnAssign):
                 if elt.ast_node.target.id in {'_if', '_while'}:
                     s = to_src(elt.ast_node.annotation)
-                    predicates.append(("%s" if idx == 0 else "z3.Not%s") % s)
+                    predicates.append(("%s" if idx == 0 else "z3.Not(%s)") % s)
                 elif isinstance(elt.ast_node.annotation, ast.Call):
                     assert elt.ast_node.annotation.func.id == self.fn_name
                 else:
@@ -343,7 +343,9 @@ class SimpleSymbolicFuzzer(Fuzzer):
 
         solutions = {}
         with checkpoint(self.z3):
+            print(constraints)
             st = 'self.z3.add(%s)' % ', '.join(constraints)
+            print(st)
             eval(st)
             if self.z3.check() != z3.sat:
                 return {}

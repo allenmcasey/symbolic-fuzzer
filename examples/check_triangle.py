@@ -38,8 +38,12 @@ def check_triangle2(a: int, b: int, c: int):
         else:
             return "Isosceles"
 
+
 def is_divisible_by_3_5(num: int):
+    
     if num % 3 == 0:
         if num % 5 == 0:
             return True
+        else:
+            return False
     return False

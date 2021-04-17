@@ -42,7 +42,7 @@ for node in ast.walk(astree):
 # Each constraint should be traceable to the part of code that created the constraint
 
 # from fuzzingbook.SymbolicFuzzer_modified import SimpleSymbolicFuzzer
-index = 2
+index = 1
 from SymbolicFuzzer import SimpleSymbolicFuzzer
 symfz_ct = SimpleSymbolicFuzzer(code_string, function_names, index, py_cfg)
 
@@ -50,10 +50,16 @@ symfz_ct = SimpleSymbolicFuzzer(code_string, function_names, index, py_cfg)
 # symfz_ct = SimpleSymbolicFuzzer(check_triangle)
 
 paths = symfz_ct.get_all_paths(symfz_ct.fnenter)
+
+#TODO need a graph to link functions once there is an external function call
+# then re-construct paths to explore deeper
 print('---------------------------- ' + str(function_names[index])+ ' ----------------------------')
 print("Number of paths: ", len(paths))
 for i in range(len(paths)):
     print(' ----------- path: ' + str(i)+ '----------- ')
+    print('Path contraints: ', symfz_ct.extract_constraints(paths[i]))
+    # TODO solve_path_constraint will fail when condition is an external function call
+    print('Contraints values: ',symfz_ct.solve_path_constraint(paths[i]))
     for item in paths[i]:
         print(item[0], ' --- ', item[1])
 
