@@ -258,11 +258,15 @@ MAX_ITER = 100
 class SimpleSymbolicFuzzer(Fuzzer):
 
     def __init__(self, arbitary_code, fn_name, **kwargs):
-        self.fn_name = fn_name
-        py_cfg = PyCFG()
-        py_cfg.gen_cfg(arbitary_code)
-
-        self.fnenter, self.fnexit = py_cfg.functions[self.fn_name]
+        def __init__(self, arbitary_code, function_names, index, py_cfg, **kwargs):
+        self.fn_name = function_names[index]
+        self.function_names = function_names
+        # py_cfg = PyCFG()
+        # py_cfg.gen_cfg(arbitary_code)
+        # py_cfg = function_CFGs[fn_name]
+        self.py_cfg = py_cfg
+        # print(py_cfg)
+        self.fnenter, self.fnexit = self.py_cfg.functions[self.fn_name]
 
         # a dictionary of used variables; ex. {'a': 'z3.Int', 'b': 'z3.Int', 'c': 'z3.Int'}
         self.used_variables = declarations(ast.parse(arbitary_code))
