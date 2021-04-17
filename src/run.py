@@ -64,10 +64,10 @@ for i in range(len(paths)):
         print(item[0], ' --- ', item[1])
 
 
-from SymbolicFuzzer import AdvancedSymbolicFuzzer
-asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names[0])
-print(asymfz_ct.used_variables)
-paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
+# from SymbolicFuzzer import AdvancedSymbolicFuzzer
+# asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names[0])
+# print(asymfz_ct.used_variables)
+# paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
 # for path in paths:
 # 	print(asymfz_ct.extract_constraints(path.get_path_to_root()))
 
