@@ -5,6 +5,8 @@ import tempfile
 import ast
 import astor
 from fuzzingbook.ControlFlow import gen_cfg, PyCFG
+import z3
+from contextlib import contextmanager
 
 # ============================ Arguments ============================
 parser = argparse.ArgumentParser(description='Argument parser')
@@ -42,7 +44,7 @@ for node in ast.walk(astree):
 # Each constraint should be traceable to the part of code that created the constraint
 
 # NOTE: Simple fuzzer will NOT work with test_list.py
-index = 1
+index = 0
 from SymbolicFuzzer import SimpleSymbolicFuzzer
 symfz_ct = SimpleSymbolicFuzzer(code_string, function_names, index, py_cfg)
 paths = symfz_ct.get_all_paths(symfz_ct.fnenter)
@@ -51,6 +53,13 @@ paths = symfz_ct.get_all_paths(symfz_ct.fnenter)
 # then re-construct paths to explore deeper
 print('---------------------------- ' + str(function_names[index])+ ' ----------------------------')
 print("Number of paths: ", len(paths))
+
+@contextmanager
+def checkpoint(z3solver):
+    z3solver.push()
+    yield z3solver
+    z3solver.pop()
+
 for i in range(len(paths)):
     print(' ----------- path: ' + str(i)+ '----------- ')
     print('Path contraints: ', symfz_ct.extract_constraints(paths[i]))
@@ -59,13 +68,16 @@ for i in range(len(paths)):
     for item in paths[i]:
         print(item[0], ' --- ', item[1])
 
-index = 0
-from SymbolicFuzzer import AdvancedSymbolicFuzzer
-asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg)
-print(asymfz_ct.used_variables)
-paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
-for path in paths:
-    print(asymfz_ct.extract_constraints(path.get_path_to_root()))
+    constraints = symfz_ct.extract_constraints(paths[i])
+
+    with checkpoint(symfz_ct.z3):
+        st = 'symfz_ct.z3.add(%s)' % ', '.join(constraints)
+        print(st)
+        # eval(st)
+        if symfz_ct.z3.check() != z3.sat:
+            print('unsatisfiable path')
+            print(paths[i])
+
 
 # ============================ Analysis ============================
 # If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to.
