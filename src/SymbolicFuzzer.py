@@ -272,7 +272,7 @@ class SimpleSymbolicFuzzer(Fuzzer):
         self.used_variables = declarations(ast.parse(arbitary_code))
 
         # a list of arguments; ex. ['a', 'b', 'c']
-        self.fn_args = ['a', 'b', 'c']
+        self.fn_args = list(self.used_variables.keys())
 
         self.z3 = z3.Solver()
 
@@ -510,6 +510,7 @@ class PNode:
         while n:
             path.append(n)
             n = n.parent
+        # print(list(reversed(path)))
         return list(reversed(path))
 
     def __str__(self):
@@ -522,9 +523,9 @@ class PNode:
 
 
 class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
-
     def options(self, kwargs):
         super().options(kwargs)
+
 
     def extract_constraints(self, path):
         return [to_src(p) for p in to_single_assignment_predicates(path) if p]
@@ -542,7 +543,9 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
 
         solutions = {}
         with checkpoint(self.z3):
+            print('constraints: ', constraints)
             st = 'self.z3.add(%s)' % ', '.join(constraints)
+            print('---------- st: ', st)
             eval(st)
             if self.z3.check() != z3.sat:
                 return {}
@@ -566,11 +569,53 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     for p in np:
                         if path.idx > self.max_depth:
                             break
+                        # if self.can_be_satisfied(p):
+                        #     new_paths.append(p)
+                        # else:
+                        #     break
                         new_paths.append(p)
                 else:
                     completed.append(path)
             path_lst = new_paths
         return completed + path_lst
+
+    # def get_all_paths(self, fenter):
+    #     path_lst = [PNode(0, fenter)]
+    #     completed = []
+    #     for i in range(self.max_iter):
+    #         new_paths = [PNode(0, fenter)]
+    #         for path in path_lst:
+    #             # explore each path once
+    #             if path.cfgnode.children:
+    #                 np = path.explore()
+    #                 for p in np:
+    #                     if path.idx > self.max_depth:
+    #                         break
+    #                     print(p)
+    #                     if self.can_be_satisfied(p):
+    #                         new_paths.append(p)
+    #                     else:
+    #                         break
+    #             else:
+    #                 completed.append(path)
+    #         path_lst = new_paths
+    #     sys.exit(0)
+    #     return completed + path_lst
+
+
+    def can_be_satisfied(self, p):
+        s2 = self.extract_constraints(p.get_path_to_root())
+        # if any(fn_name in s2 for fn_name in self.function_names):
+        #     print("asdasdasdsadas")
+        # print(s2)
+        s = z3.Solver()
+        identifiers = [c for i in s2 for c in used_identifiers(i)]
+        with_types = identifiers_with_types(identifiers, self.used_variables)
+        decl = define_symbolic_vars(with_types, '')
+        exec(decl)
+        exec("s.add(z3.And(%s))" % ','.join(s2), globals(), locals())
+        # sys.exit(0)
+        return s.check() == z3.sat
 
     def get_next_path(self):
         self.last_path -= 1
