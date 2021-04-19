@@ -1,4 +1,4 @@
-def is_divisible_by_3_5(num: int):
+def is_divisible_by_3_5(num: int, num2: int):
     
     if num % 3 == 0:
         if num % 5 == 0:
@@ -28,7 +28,8 @@ def check_triangle(a: int, b: int, c: int):
 
 
 def check_triangle2(a: int, b: int, c: int):
-    if not is_divisible_by_3_5(a):
+    a = 7
+    if not is_divisible_by_3_5(a, b):
         return "Failed"
     if a == b:
         if a == c:

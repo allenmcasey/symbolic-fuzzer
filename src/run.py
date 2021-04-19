@@ -5,6 +5,7 @@ import tempfile
 import ast
 import astor
 import sys
+import utils
 from fuzzingbook.ControlFlow import gen_cfg, PyCFG
 
 # ============================ Arguments ============================
@@ -21,6 +22,9 @@ input_program = args.input
 depth = args.depth
 function_names = []
 function_CFGs = {}
+# function names which are called by another function
+# we need to re-check these function if there are constant value for arguments
+called_functions = [] 
 py_cfg = PyCFG()
 
 # create AST from source file; get string
@@ -29,9 +33,9 @@ code_string = astor.to_source(astree)
 
 # get CFG of each defined fn
 for node in ast.walk(astree):
-	if isinstance(node, ast.FunctionDef):
-		function_names.append(node.name)
-		function_CFGs[node.name] = py_cfg.gen_cfg(astor.to_source(node))
+    if isinstance(node, ast.FunctionDef):
+        function_names.append(node.name)
+        function_CFGs[node.name] = py_cfg.gen_cfg(astor.to_source(node))
 
 # print(code_string)
 # print(function_names)
@@ -42,28 +46,8 @@ for node in ast.walk(astree):
 # from fuzzingbook.SymbolicFuzzer_original import SymbolicFuzzer
 # Generate and print the path constraints in the program
 # Each constraint should be traceable to the part of code that created the constraint
+index = 2
 
-# NOTE: Simple fuzzer will NOT work with test_list.py
-# index = 1
-# from SymbolicFuzzer import SimpleSymbolicFuzzer
-# symfz_ct = SimpleSymbolicFuzzer(code_string, function_names, index, py_cfg)
-# paths = symfz_ct.get_all_paths(symfz_ct.fnenter)
-
-#TODO need a graph to link functions once there is an external function call
-# then re-construct paths to explore deeper
-# print('---------------------------- ' + str(function_names[index])+ ' ----------------------------')
-# print("Number of paths: ", len(paths))
-# for i in range(len(paths)):
-#     print(' ----------- path: ' + str(i)+ '----------- ')
-#     print('Path contraints: ', symfz_ct.extract_constraints(paths[i]))
-#     # TODO solve_path_constraint will fail when condition is an external function call
-#     print('Contraints values: ',symfz_ct.solve_path_constraint(paths[i]))
-#     for item in paths[i]:
-#         print(item[0], ' --- ', item[1])
-
-
-# sys.exit(0)
-index = 0
 from SymbolicFuzzer import AdvancedSymbolicFuzzer
 
 asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg, max_depth=depth)
@@ -85,13 +69,15 @@ for i in range(len(paths)):
     num_of_paths += 1
     print(' ----------- path: ' + str(num_of_paths)+ '----------- ')
     used_constraint.append(constraint_key)
+
+    constraint = utils.check_function_call(constraint, function_names)
+
     print('Path contraints: ', constraint)
     # sys.exit(0)
     # TODO solve_path_constraint will fail when condition is an external function call
     # print(paths[i].get_path_to_root(), type(paths[i].get_path_to_root()) )
 
-
-    # print('Contraints values: ',asymfz_ct.solve_path_constraint(paths[i].get_path_to_root()))
+    print('Contraints values: ',asymfz_ct.solve_constraint(constraint))
     # for item in paths[i].get_path_to_root():
 
 print("Total number of paths: ", num_of_paths)
