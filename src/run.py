@@ -95,5 +95,3 @@ for fc_name_key in functions_with_constant:
 
 # ============================ Analysis ============================
 # If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to.
-def check_unsa_path():
-    s = 3

@@ -578,7 +578,7 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             if self.z3.check() != z3.sat:
                 print(" ============= ERROR: UNSAT PATH FOUND       ============= \n\t",\
                  {k: solutions.get(k, None) for k in self.fn_args})
-                # TODO
+
                 print("unsat_core_length", len(self.z3.unsat_core()))
                 # print(unsa_path)
                 unsa_core = self.z3.unsat_core()
@@ -587,6 +587,7 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     # print(type(name))
                     print("unsa_core", unsa_path[name])
                     unsa_result.append(unsa_path[name])
+                # TODO  get the statements for the unsatisfied path
                 return {}
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
