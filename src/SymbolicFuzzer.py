@@ -37,7 +37,6 @@ from graphviz import Source, Graph
 from fuzzingbook.Fuzzer import Fuzzer
 from contextlib import contextmanager
 
-
 # ============================ Helper Functions ============================
 
 
@@ -561,10 +560,22 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
 
         solutions = {}
         with checkpoint(self.z3):
-            # print('constraints: ', constraints)
-            st = 'self.z3.add(%s)' % ', '.join(constraints)
-            # print('---------- st: ', st)
-            eval(st)
+            print('origin constraints: ', constraints)
+            # print("length",len(constraints))
+            print(constraints[0])
+
+            i = 0
+            unsa_path = {}
+            unsa_result =[]
+            for con in constraints:
+                # print("con: ",con)
+                st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
+                print('---------- st: ', st2)
+                i=i+1
+                path_name = 'p'+ str(i)
+                unsa_path[z3.Bool(path_name)] = con
+                eval(st2)
+
             if self.z3.check() != z3.sat:
                 print(" ============= ERROR: UNSAT PATH FOUND       ============= \n\t",\
                  {k: solutions.get(k, None) for k in self.fn_args})
@@ -573,6 +584,15 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                 print(' =============                               ================ ')
                 print(' =============                               ================ ')
                 print(' ============================================================ ')
+
+                print("unsat_core_length", len(self.z3.unsat_core()))
+                # print(unsa_path)
+                unsa_core = self.z3.unsat_core()
+                print("unsa_core",unsa_core)
+                for name in self.z3.unsat_core():
+                    # print(type(name))
+                    print("unsa_core", unsa_path[name])
+                    unsa_result.append(unsa_path[name])
                 return {}
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
