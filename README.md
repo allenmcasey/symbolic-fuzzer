@@ -1,6 +1,6 @@
 # symbolic-fuzzer
 
-A symbolic fuzzer tool capable of generating input values symbolically for Python functions in a given source file.
+A symbolic fuzzer tool capable of generating input values symbolically for Python functions in a given source file, and determining whether or not each function contains execution paths that are unreachable.
 
 
 ### Installation
@@ -26,12 +26,15 @@ A symbolic fuzzer tool capable of generating input values symbolically for Pytho
 `Windows:`
   * `python src\run.py -i examples\check_triangle.py`
   * For help, or to see optional args: `python src\run.py -h`
-### Assumptions:
 
-  * We assume that the function is not recursive and at most calls two self-contained methods
-  * We assume that all variables are annotated with the type information, and only container used in the programs are lists with the maximum size 10
+### Assumptions We Make:
 
-### Tool Description & Requirements:
+  * Functions in input file are not recursive, and all functions called from other functions are self-contained
+  * All functions are of return type `void` (they do not return a value)
+  * All variables are annotated with the type information, and the only containers used in the programs will be of type List with the maximum size 10
+  * Lists cannot be passed as arguments to functions, they can only be initialized inside of a function body
+
+### Requirements of the Tool:
 
   * Generate and print the path constraints in the program.
   * Each constraint should be traceable to the part of code that created the constraint.
