@@ -133,6 +133,8 @@ def used_identifiers(src):
             lst.extend(names(astnode.left))
             for i in astnode.comparators:
                 lst.extend(names(i))
+        elif isinstance(astnode, ast.Subscript):
+            lst.append(to_src(astnode))
         elif isinstance(astnode, ast.Name):
             lst.append(astnode.id)
         elif isinstance(astnode, ast.Expr):
@@ -190,15 +192,13 @@ def declarations(astnode, hm=None):
     elif isinstance(astnode, ast.AnnAssign):
         assert isinstance(astnode.target, ast.Name)
         if isinstance(astnode.value, ast.List):
-
             if isinstance(astnode.value.elts[0], ast.Num):
                 element_type = type(astnode.value.elts[0].n)
             else:
                 element_type = type(astnode.value.elts[0].s)
-
             list_name = astnode.target.id
             for i in range(0, len(astnode.value.elts)):
-                hm[list_name + "[%d]" % i] = translate_to_z3_name(element_type.__name__)
+                hm["%s_%d" % (list_name, i)] = translate_to_z3_name(element_type.__name__)
         else:
             hm[astnode.target.id] = translate_to_z3_name(astnode.annotation.id)
     elif isinstance(astnode, ast.Assign):
@@ -223,9 +223,9 @@ def declarations(astnode, hm=None):
 
 def define_symbolic_vars(fn_vars, prefix):
     sym_var_dec = ', '.join([prefix + n for n in fn_vars])
-    sym_var_def = ', '.join(["%s('%s%s')" % (t, prefix, n)
-                             for n, t in fn_vars.items()])
-    return "%s = %s" % (sym_var_dec, sym_var_def)
+    sym_var_def = ', '.join(["%s('%s%s')" % (t, prefix, n) for n, t in fn_vars.items()])
+    result = "%s = %s" % (sym_var_dec, sym_var_def)
+    return result
 
 
 def gen_fn_summary(prefix, fn):
@@ -265,7 +265,6 @@ class SimpleSymbolicFuzzer(Fuzzer):
         # py_cfg.gen_cfg(arbitary_code)
         # py_cfg = function_CFGs[fn_name]
         self.py_cfg = py_cfg
-        # print(py_cfg)
         self.fnenter, self.fnexit = self.py_cfg.functions[self.fn_name]
 
         # a dictionary of used variables; ex. {'a': 'z3.Int', 'b': 'z3.Int', 'c': 'z3.Int'}
@@ -336,17 +335,14 @@ class SimpleSymbolicFuzzer(Fuzzer):
 
         solutions = {}
         with checkpoint(self.z3):
-            print(constraints)
             st = 'self.z3.add(%s)' % ', '.join(constraints)
-            print(st)
             eval(st)
             if self.z3.check() != z3.sat:
                 return {}
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}
-        predicate = 'z3.And(%s)' % ','.join(
-            ["%s == %s" % (k, v) for k, v in my_args.items()])
+        predicate = 'z3.And(%s)' % ','.join(["%s == %s" % (k, v) for k, v in my_args.items()])
         eval('self.z3.add(z3.Not(%s))' % predicate)
         return my_args
 
@@ -395,8 +391,11 @@ def rename_variables(astnode, env):
             env[astnode.id] = 0
         num = env[astnode.id]
         return ast.Name('_%s_%d' % (astnode.id, num), astnode.ctx)
+
+    # fixed
     elif isinstance(astnode, ast.Subscript):
-        name = to_src(astnode)
+        identifier = to_src(astnode)
+        name = identifier[:-3] + '_' + identifier[-2]
         if name not in env:
             env[name] = 0
         num = env[name]
@@ -428,12 +427,13 @@ def to_single_assignment_predicates(path):
                 assert node.order == 1
                 new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
 
+        # fixed
         elif isinstance(ast_node, ast.AnnAssign):
             if isinstance(ast_node.value, ast.List):
                 for idx, element in enumerate(ast_node.value.elts):
-                    assigned = ast_node.target.id + "[" + str(idx) + "]"
+                    assigned = ast_node.target.id + "_" + str(idx)
                     val = [rename_variables(element, env)]
-                    env[assigned] = 0 if assigned not in env else env[assigned] + 1
+                    env[assigned] = 0
                     target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
                     new_path.append(ast.Expr(ast.Compare(target, [ast.Eq()], val)))
                 pass
@@ -444,14 +444,19 @@ def to_single_assignment_predicates(path):
                 target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
                 new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
 
+        # fixed
         elif isinstance(ast_node, ast.Assign):
             if isinstance(ast_node.targets[0], ast.Subscript):
-                assigned = to_src(ast_node.targets[0])
+                identifier = to_src(ast_node.targets[0])
+                assigned = identifier[:-3] + '_' + identifier[-2]
+                val = [rename_variables(ast_node.value, env)]
+                env[assigned] = 0 if assigned not in env else env[assigned] + 1
+                target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
             else:
                 assigned = ast_node.targets[0].id
-            val = [rename_variables(ast_node.value, env)]
-            env[assigned] = 0 if assigned not in env else env[assigned] + 1
-            target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
+                val = [rename_variables(ast_node.value, env)]
+                env[assigned] = 0 if assigned not in env else env[assigned] + 1
+                target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
             new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
         elif isinstance(ast_node, (ast.Return, ast.Pass)):
             new_node = None
@@ -466,8 +471,12 @@ def identifiers_with_types(identifiers, defined):
     with_types = dict(defined)
     for i in identifiers:
         if i[0] == '_':
-            nxt = i[1:].find('_', 1)
-            name = i[1:nxt + 1]
+            if i.count('_') > 2:
+                last = i.rfind('_')
+                name = i[1:last]
+            else:
+                nxt = i[1:].find('_', 1)
+                name = i[1:nxt + 1]
             assert name in defined
             typ = defined[name]
             with_types[i] = typ
@@ -533,10 +542,8 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
         # re-initializing does not seem problematic.
         # a = z3.Int('a').get_id() remains the same.
         constraints = self.extract_constraints(path)
-        identifiers = [
-            c for i in constraints for c in used_identifiers(i)]  # <- changes
-        with_types = identifiers_with_types(
-            identifiers, self.used_variables)  # <- changes
+        identifiers = [c for i in constraints for c in used_identifiers(i)]  # <- changes
+        with_types = identifiers_with_types(identifiers, self.used_variables)  # <- changes
         decl = define_symbolic_vars(with_types, '')
         exec(decl)
 
@@ -545,12 +552,13 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             st = 'self.z3.add(%s)' % ', '.join(constraints)
             eval(st)
             if self.z3.check() != z3.sat:
+                print("====== ERROR: UNSAT PATH ======\n\t", {k: solutions.get(k, None) for k in self.fn_args})
+
                 return {}
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}
-        predicate = 'z3.And(%s)' % ','.join(
-            ["%s == %s" % (k, v) for k, v in my_args.items()])
+        predicate = 'z3.And(%s)' % ','.join(["%s == %s" % (k, v) for k, v in my_args.items() if v is not None])
         eval('self.z3.add(z3.Not(%s))' % predicate)
         return my_args
 
