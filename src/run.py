@@ -92,7 +92,7 @@ for i in range(len(paths)):
 
 
     # print('Contraints values: ',asymfz_ct.solve_path_constraint(paths[i].get_path_to_root()))
-    # for item in paths[i].get_path_to_root():.get_path_to_root():
+    # for item in paths[i].get_path_to_root():
 
 print("Number of paths: ", num_of_paths)
 # for path in paths:
