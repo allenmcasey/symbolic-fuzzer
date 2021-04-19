@@ -7,6 +7,7 @@ import astor
 import sys
 import ConstantDetector
 from fuzzingbook.ControlFlow import gen_cfg, PyCFG
+import z3
 
 # ============================ Arguments ============================
 parser = argparse.ArgumentParser(description='Argument parser')
@@ -64,17 +65,18 @@ functions_with_constant = {}
 
 for i in range(len(paths)):
     constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
+    # print("origin constraint", constraint)
     constraint_key = '__'.join(constraint)
     if constraint_key in used_constraint or len(constraint) < 2:
         continue
     num_of_paths += 1
     print(' ----------- path: ' + str(num_of_paths)+ '----------- ')
     used_constraint.append(constraint_key)
-
     constraint, function_with_constant = ConstantDetector.check_function_call(constraint, function_names)
 
     functions_with_constant.update(function_with_constant)
     print('Path contraints: ', constraint)
+
     print('Contraints values: ', asymfz_ct.solve_constraint(constraint))
 
 
@@ -93,3 +95,5 @@ for fc_name_key in functions_with_constant:
 
 # ============================ Analysis ============================
 # If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to.
+def check_unsa_path():
+    s = 3

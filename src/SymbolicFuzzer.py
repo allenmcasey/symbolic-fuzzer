@@ -562,15 +562,14 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
         with checkpoint(self.z3):
             print('origin constraints: ', constraints)
             # print("length",len(constraints))
-            print(constraints[0])
-
+            # print(constraints[0])
             i = 0
             unsa_path = {}
             unsa_result =[]
             for con in constraints:
                 # print("con: ",con)
                 st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
-                print('---------- st: ', st2)
+                # print('---------- st: ', st2)
                 i=i+1
                 path_name = 'p'+ str(i)
                 unsa_path[z3.Bool(path_name)] = con
@@ -580,16 +579,11 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                 print(" ============= ERROR: UNSAT PATH FOUND       ============= \n\t",\
                  {k: solutions.get(k, None) for k in self.fn_args})
                 # TODO
-                print(' ============= TODO: analysis should be here ================ ')
-                print(' =============                               ================ ')
-                print(' =============                               ================ ')
-                print(' ============================================================ ')
-
                 print("unsat_core_length", len(self.z3.unsat_core()))
                 # print(unsa_path)
                 unsa_core = self.z3.unsat_core()
-                print("unsa_core",unsa_core)
-                for name in self.z3.unsat_core():
+                # print("unsa_core",unsa_core)
+                for name in unsa_core:
                     # print(type(name))
                     print("unsa_core", unsa_path[name])
                     unsa_result.append(unsa_path[name])
