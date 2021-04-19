@@ -63,7 +63,7 @@ for node in ast.walk(astree):
 
 
 # sys.exit(0)
-index = 2
+index = 0
 from SymbolicFuzzer import AdvancedSymbolicFuzzer
 
 asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg, max_depth=depth)
@@ -76,15 +76,15 @@ print('---------------------------- ' + str(function_names[index])+ ' ----------
 
 num_of_paths = 0
 used_constraint = []
-print("Number of paths: ", len(paths))
 
 for i in range(len(paths)):
     constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
-    if constraint in used_constraint:
+    constraint_key = '__'.join(constraint)
+    if constraint_key in used_constraint or len(constraint) < 2:
         continue
     num_of_paths += 1
     print(' ----------- path: ' + str(num_of_paths)+ '----------- ')
-    used_constraint.append(constraint)
+    used_constraint.append(constraint_key)
     print('Path contraints: ', constraint)
     # sys.exit(0)
     # TODO solve_path_constraint will fail when condition is an external function call
@@ -94,7 +94,7 @@ for i in range(len(paths)):
     # print('Contraints values: ',asymfz_ct.solve_path_constraint(paths[i].get_path_to_root()))
     # for item in paths[i].get_path_to_root():
 
-print("Number of paths: ", num_of_paths)
+print("Total number of paths: ", num_of_paths)
 # for path in paths:
 #     print(asymfz_ct.extract_constraints(path.get_path_to_root()))
 

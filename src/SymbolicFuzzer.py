@@ -409,11 +409,13 @@ def rename_variables(astnode, env):
 def to_single_assignment_predicates(path):
     env = {}
     new_path = []
+    completed_path = False
     for i, node in enumerate(path):
         ast_node = node.cfgnode.ast_node
         new_node = None
         if isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {
                 'exit'}:
+            completed_path = True
             new_node = None
         elif isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'enter'}:
             args = [
@@ -464,7 +466,7 @@ def to_single_assignment_predicates(path):
             s = "NI %s %s" % (type(ast_node), ast_node.target.id)
             raise Exception(s)
         new_path.append(new_node)
-    return new_path
+    return new_path, completed_path
 
 
 def identifiers_with_types(identifiers, defined):
@@ -535,9 +537,17 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
     def options(self, kwargs):
         super().options(kwargs)
 
-
     def extract_constraints(self, path):
-        return [to_src(p) for p in to_single_assignment_predicates(path) if p]
+        result = []
+        generated_path, completed = to_single_assignment_predicates(path)
+        if not completed:
+            return []
+        for p in generated_path:
+            # if (isinstance(p, ast.AnnAssign) and p.target.id in {'exit', 'return'}):
+            if p:
+                result.append(to_src(p))
+        return result
+        # return [to_src(p) for p in to_single_assignment_predicates(path) if p]
 
     def solve_path_constraint(self, path):
         # re-initializing does not seem problematic.
