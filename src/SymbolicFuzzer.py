@@ -426,7 +426,9 @@ def to_single_assignment_predicates(path):
         elif isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'_if', '_while'}:
             new_node = rename_variables(ast_node.annotation, env)
             if node.order != 0:
-                assert node.order == 1
+                # assert node.order == 1
+                if node.order != 1:
+                    return [], False
                 new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
 
         # fixed
@@ -564,8 +566,14 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             # print('---------- st: ', st)
             eval(st)
             if self.z3.check() != z3.sat:
-                print("====== ERROR: UNSAT PATH ======\n\t", {k: solutions.get(k, None) for k in self.fn_args})
-                return self.fn_args
+                print(" ============= ERROR: UNSAT PATH FOUND       ============= \n\t",\
+                 {k: solutions.get(k, None) for k in self.fn_args})
+                # TODO
+                print(' ============= TODO: analysis should be here ================ ')
+                print(' =============                               ================ ')
+                print(' =============                               ================ ')
+                print(' ============================================================ ')
+                return {}
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}

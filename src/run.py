@@ -5,7 +5,7 @@ import tempfile
 import ast
 import astor
 import sys
-import utils
+import ConstantDetector
 from fuzzingbook.ControlFlow import gen_cfg, PyCFG
 
 # ============================ Arguments ============================
@@ -60,6 +60,7 @@ print('---------------------------- ' + str(function_names[index])+ ' ----------
 
 num_of_paths = 0
 used_constraint = []
+functions_with_constant = {}
 
 for i in range(len(paths)):
     constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
@@ -70,17 +71,23 @@ for i in range(len(paths)):
     print(' ----------- path: ' + str(num_of_paths)+ '----------- ')
     used_constraint.append(constraint_key)
 
-    constraint = utils.check_function_call(constraint, function_names)
+    constraint, function_with_constant = ConstantDetector.check_function_call(constraint, function_names)
 
+    functions_with_constant.update(function_with_constant)
     print('Path contraints: ', constraint)
-    # sys.exit(0)
-    # TODO solve_path_constraint will fail when condition is an external function call
-    # print(paths[i].get_path_to_root(), type(paths[i].get_path_to_root()) )
+    print('Contraints values: ', asymfz_ct.solve_constraint(constraint))
 
-    print('Contraints values: ',asymfz_ct.solve_constraint(constraint))
-    # for item in paths[i].get_path_to_root():
 
-print("Total number of paths: ", num_of_paths)
+print('---------------------------- RE-CHECK FUNCTIONS CALL WITH CONSTANT VALUES ----------------------------')
+# re-check some functions which with constant input argument values
+for fc_name_key in functions_with_constant:
+    fc_name = fc_name_key.split('**')[0]
+    arg_values = functions_with_constant[fc_name_key]
+    print(fc_name, arg_values)
+    # TODO 
+
+# print(functions_with_constant)
+# print("Total number of paths: ", num_of_paths)
 # for path in paths:
 #     print(asymfz_ct.extract_constraints(path.get_path_to_root()))
 
