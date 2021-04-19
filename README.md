@@ -1,6 +1,18 @@
 # symbolic-fuzzer
 
-A symbolic fuzzer tool capable of generating input values symbolically for Python functions in a given source file, and determining whether or not each function contains execution paths that are unreachable.
+A symbolic fuzzer tool capable of generating symbolic inputs for Python functions 
+in a given source file, and determining whether or not each function contains execution 
+paths that are unreachable based on accumulated constraints. This project extends the 
+functionality of the fuzzingbook.SymbolicFuzzer tool provided by The Fuzzing Book (see 
+**References** below). The extensions this tool offers include the following:
+
+  * Support for List initialization and use inside of functions
+  * Support for function calls from the function being analyzed
+  * Support for unsat core collection, and the ability to trace the unsat 
+  core up the path back to the source
+  
+Please refer to the section **Assumptions We Make** below for more information on the
+limitations of these supported extensions.
 
 
 ### Installation
@@ -35,9 +47,9 @@ A symbolic fuzzer tool capable of generating input values symbolically for Pytho
 
 ### Requirements of the Tool:
 
-  * Generate and print the path constraints in the program.
-  * Each constraint should be traceable to the part of code that created the constraint.
-  * If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to.
+  * Generate and print the path constraints in the program
+  * Each constraint should be traceable to the part of code that created the constraint
+  * If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to
 
 
 ### References:
