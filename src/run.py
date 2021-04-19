@@ -79,20 +79,20 @@ used_constraint = []
 print("Number of paths: ", len(paths))
 
 for i in range(len(paths)):
-	constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
-	if constraint in used_constraint:
-		continue
-	num_of_paths += 1
-	print(' ----------- path: ' + str(num_of_paths)+ '----------- ')
-	used_constraint.append(constraint)
-	print('Path contraints: ', constraint)
-	# sys.exit(0)
-	# TODO solve_path_constraint will fail when condition is an external function call
-	# print(paths[i].get_path_to_root(), type(paths[i].get_path_to_root()) )
+    constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
+    if constraint in used_constraint:
+        continue
+    num_of_paths += 1
+    print(' ----------- path: ' + str(num_of_paths)+ '----------- ')
+    used_constraint.append(constraint)
+    print('Path contraints: ', constraint)
+    # sys.exit(0)
+    # TODO solve_path_constraint will fail when condition is an external function call
+    # print(paths[i].get_path_to_root(), type(paths[i].get_path_to_root()) )
 
 
-	# print('Contraints values: ',asymfz_ct.solve_path_constraint(paths[i].get_path_to_root()))
-	# for item in paths[i].get_path_to_root():
+    # print('Contraints values: ',asymfz_ct.solve_path_constraint(paths[i].get_path_to_root()))
+    # for item in paths[i].get_path_to_root():.get_path_to_root():
 
 print("Number of paths: ", num_of_paths)
 # for path in paths:
