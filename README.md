@@ -21,9 +21,11 @@ A symbolic fuzzer tool capable of generating input values symbolically for Pytho
 ### How To Run
 ` Unix:`
   * `python src/run.py -i examples/check_triangle.py`
+  * For help, or to see optional args: `python src/run.py -h`
 
 `Windows:`
   * `python src\run.py -i examples\check_triangle.py`
+  * For help, or to see optional args: `python src\run.py -h`
 ### Assumptions:
 
   * We assume that the function is not recursive and at most calls two self-contained methods
