@@ -30,7 +30,6 @@ A symbolic fuzzer tool capable of generating input values symbolically for Pytho
 ### Assumptions We Make:
 
   * Functions in input file are not recursive, and all functions called from other functions are self-contained
-  * All functions are of return type `void` (they do not return a value)
   * All variables are annotated with the type information, and the only containers used in the programs will be of type List with the maximum size 10
   * Lists cannot be passed as arguments to functions, they can only be initialized inside of a function body
 
