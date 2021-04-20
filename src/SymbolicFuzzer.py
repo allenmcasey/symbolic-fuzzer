@@ -168,7 +168,6 @@ Function_Summaries['func_name'] = {
 def translate_to_z3_name(v):
     return SYM_VARS_STR[v][0]
 
-
 def declarations(astnode, hm=None):
     if hm is None:
         hm = {}
@@ -216,7 +215,8 @@ def declarations(astnode, hm=None):
     elif isinstance(astnode, ast.Return):
         pass
     else:
-        raise Exception(to_src(astnode))
+        return {}
+        # raise Exception(to_src(astnode))
     return hm
 
 
@@ -425,7 +425,7 @@ def to_single_assignment_predicates(path):
         elif isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'_if', '_while'}:
             new_node = rename_variables(ast_node.annotation, env)
             if node.order != 0:
-                # assert node.order == 1
+                assert node.order == 1
                 if node.order != 1:
                     return [], False
                 new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
@@ -464,8 +464,9 @@ def to_single_assignment_predicates(path):
         elif isinstance(ast_node, (ast.Return, ast.Pass)):
             new_node = None
         else:
-            s = "NI %s %s" % (type(ast_node), ast_node.target.id)
-            raise Exception(s)
+            continue
+            # s = "NI %s %s" % (type(ast_node), ast_node.target.id)
+            # raise Exception(s)
         new_path.append(new_node)
     return new_path, completed_path
 

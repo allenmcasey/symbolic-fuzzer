@@ -7,91 +7,149 @@ import astor
 import sys
 import ConstantDetector
 from fuzzingbook.ControlFlow import gen_cfg, PyCFG
-import z3
-
-# ============================ Arguments ============================
-parser = argparse.ArgumentParser(description='Argument parser')
-# ============== required arguments ==============
-parser.add_argument("-i", "--input", help="input program path", type=str, required=True)
-# ============== optional arguments ==============
-parser.add_argument("-d", "--depth", help="max depth", type=int, default=10)
-args = parser.parse_args()
-
-
-# ============================ read input program as code_string ============================
-input_program = args.input
-depth = args.depth
-function_names = []
-function_CFGs = {}
-# function names which are called by another function
-# we need to re-check these function if there are constant value for arguments
-called_functions = [] 
-py_cfg = PyCFG()
-
-# create AST from source file; get string
-astree = astor.parse_file(input_program)
-code_string = astor.to_source(astree)
-
-# get CFG of each defined fn
-for node in ast.walk(astree):
-    if isinstance(node, ast.FunctionDef):
-        function_names.append(node.name)
-        function_CFGs[node.name] = py_cfg.gen_cfg(astor.to_source(node))
-
-# print(code_string)
-# print(function_names)
-# print(function_CFGs)
-
-# ============================ Generation ============================
-# Construct CFG and collect the paths
-# from fuzzingbook.SymbolicFuzzer_original import SymbolicFuzzer
-# Generate and print the path constraints in the program
-# Each constraint should be traceable to the part of code that created the constraint
-index = 2
-
 from SymbolicFuzzer import AdvancedSymbolicFuzzer
 
-asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg, max_depth=depth)
 
-print(asymfz_ct.used_variables)
+def main(args):
+    # ============================ read input program as code_string ============================
+    input_program = args.input
+    selected_function_name = args.func
+    check_constant = args.constant
+    max_depth = args.depth
+    max_iter = args.iter
+    max_tries = args.tries
 
-paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
+    # ============================ Initialization ============================
+    function_names = []
+    function_CFGs = {}
+    py_cfg = PyCFG()
+    # create AST from source file; get string
+    astree = astor.parse_file(input_program)
+    code_string = astor.to_source(astree)
 
-print('---------------------------- ' + str(function_names[index])+ ' ----------------------------')
+    # ============================ CFG generation ============================
+    # get CFG of each defined fn
+    index = 0
+    for node in ast.walk(astree):
+        if isinstance(node, ast.FunctionDef):
+            function_names.append(node.name)
+            if selected_function_name == node.name:
+                selected_index = index
+            function_CFGs[node.name] = py_cfg.gen_cfg(astor.to_source(node))
+            index += 1
+    # ============================ Analysis ============================
+    # only check selected function
+    if selected_function_name:
+        print_func(selected_function_name)
+        analyze_program(code_string, function_names, selected_index, py_cfg, max_depth, max_tries, max_iter, check_constant)
+    # analyze all functions from input program
+    else:
+        for i in range(len(function_names)):
+            print_func(function_names[i])
+            analyze_program(code_string, function_names, i, py_cfg, max_depth, max_tries, max_iter, check_constant)
 
-num_of_paths = 0
-used_constraint = []
-functions_with_constant = {}
 
-for i in range(len(paths)):
-    constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
-    # print("origin constraint", constraint)
-    constraint_key = '__'.join(constraint)
-    if constraint_key in used_constraint or len(constraint) < 2:
-        continue
-    num_of_paths += 1
-    print(' ----------- path: ' + str(num_of_paths)+ '----------- ')
-    used_constraint.append(constraint_key)
-    constraint, function_with_constant = ConstantDetector.check_function_call(constraint, function_names)
+# analysis
+def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_tries, max_iter, check_constant, insert_constant=[]):
+    asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg,\
+                max_depth=max_depth, max_tries=max_tries, max_iter=max_iter)
+    # print(asymfz_ct.used_variables)
+    paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
+    num_of_paths = 0
+    used_constraint = []
+    functions_with_constant = {}
 
-    functions_with_constant.update(function_with_constant)
-    print('Path contraints: ', constraint)
+    for i in range(len(paths)):
+        constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
+        constraint_key = '__'.join(constraint)
+        if constraint_key in used_constraint or len(constraint) < 2:
+            continue
+        num_of_paths += 1
+        print('\n ---------------------------------------- path: ' + str(num_of_paths)+ ' ---------------------------------------- ')
+        used_constraint.append(constraint_key)
+        # print(constraint)
+        constraint, function_with_constant = ConstantDetector.check_function_call(constraint, function_names)
+        if insert_constant:
+            constraint = generate_constraint_constant(insert_constant, constraint)
+        if check_constant:
+            functions_with_constant.update(function_with_constant)
+        # constraints
+        print('Contraint Path: ', constraint)
+        print('Contraint Arguments: ', asymfz_ct.solve_constraint(constraint))
 
-    print('Contraints values: ', asymfz_ct.solve_constraint(constraint))
+    if check_constant:
+        print(check_constant)
+        print('########################## RE-CHECK FUNCTIONS CALL WITH CONSTANT VALUES ########################## ')
+        recheck_func_with_constant(functions_with_constant, code_string,\
+                                function_names, index, py_cfg, max_depth, max_tries, max_iter)
 
 
-print('---------------------------- RE-CHECK FUNCTIONS CALL WITH CONSTANT VALUES ----------------------------')
 # re-check some functions which with constant input argument values
-for fc_name_key in functions_with_constant:
-    fc_name = fc_name_key.split('**')[0]
-    arg_values = functions_with_constant[fc_name_key]
-    print(fc_name, arg_values)
-    # TODO 
+def recheck_func_with_constant(functions_with_constant, code_string,\
+                            function_names, index, py_cfg, max_depth, max_tries, max_iter):
+    for fc_name_key in functions_with_constant:
+        fc_name = fc_name_key.split('**')[0]
+        arg_values = functions_with_constant[fc_name_key]
+        insert_constant = []
+        print("########################## ", fc_name, arg_values)
+        for index, fn_name in enumerate(function_names):
+            if fn_name == fc_name:
+                analyze_program(code_string, function_names, index, py_cfg,
+                        max_depth, max_tries, max_iter, False, insert_constant=arg_values)
+                
 
-# print(functions_with_constant)
-# print("Total number of paths: ", num_of_paths)
-# for path in paths:
-#     print(asymfz_ct.extract_constraints(path.get_path_to_root()))
 
-# ============================ Analysis ============================
-# If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to.
+# generate additional consraints for constant values
+def generate_constraint_constant(insert_constant, constraint):
+    constraint_args = constraint[0]
+    if 'z3.And(' in constraint_args:
+        args = constraint_args.split('(')[1].split(')')[0].split(',')
+        if len(args) != len(insert_constant):
+            print('args length does not match', args, insert_constant)
+            return constraint
+        for i, (x, y) in enumerate(zip(args, insert_constant)):
+            if y != 'unknown':
+                renamed_variable = x.split('==')[-1].strip()
+                if is_constant_assigned(renamed_variable, constraint):
+                    continue
+                temp = renamed_variable + ' == ' + str(y)
+                constraint.insert(1, temp)
+    return constraint
+
+
+# a variable can be assigned with constant value
+def is_constant_assigned(renamed_variable, constraint):
+    for c in constraint:
+        if ' == ' in c:
+            if ConstantDetector.is_number(c.split(' == ')[-1]):
+                return True
+    return False
+
+
+# print function name
+def print_func(s):
+    fixed_string = "{0:>20}".format(s)
+    print('\n############################################################################################### ')
+    print('########################### Function Name: ' + fixed_string + '      ########################## ')
+    print('############################################################################################### ')
+
+
+# generate a report for UNSAT constraint path
+def report():
+    pass
+
+
+# main 
+if __name__ == "__main__":
+    # ============================ Arguments ============================
+    parser = argparse.ArgumentParser(description='Argument parser')
+    # ============== required arguments ==============
+    parser.add_argument("-i", "--input", help="input program path", type=str, required=True)
+    # ============== optional arguments ==============
+    parser.add_argument("-d", "--depth", help="max depth", type=int, default=10)
+    parser.add_argument("-t", "--tries", help="max tries", type=int, default=10)
+    parser.add_argument("-r", "--iter", help="max iterations", type=int, default=10)
+    parser.add_argument("-f", "--func", help="specify function name", type=str, default=None)
+    parser.add_argument("-c", "--constant", help="re-check function if constant detected", type=int, default=1)
+    args = parser.parse_args()
+    main(args)
