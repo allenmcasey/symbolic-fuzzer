@@ -586,6 +586,8 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                 # print("unsa_core",unsa_core)
                 for name in unsa_core:
                     # print(type(name))
+                    if name not in unsa_path:
+                        continue
                     print("unsa_core", unsa_path[name])
                     unsa_result.append(unsa_path[name])
                 # TODO  get the statements for the unsatisfied path
