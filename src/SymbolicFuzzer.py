@@ -562,6 +562,8 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
         solutions = {}
         with checkpoint(self.z3):
             print('origin constraints: ', constraints)
+            # print("length",len(constraints))
+            # print(constraints[0])
             i = 0
             unsa_path = {}
             unsa_result =[]
