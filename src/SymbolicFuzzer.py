@@ -562,8 +562,6 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
         solutions = {}
         with checkpoint(self.z3):
             print('origin constraints: ', constraints)
-            # print("length",len(constraints))
-            # print(constraints[0])
             i = 0
             unsa_path = {}
             unsa_result =[]
@@ -581,15 +579,14 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                  {k: solutions.get(k, None) for k in self.fn_args})
 
                 print("unsat_core_length", len(self.z3.unsat_core()))
-                # print(unsa_path)
                 unsa_core = self.z3.unsat_core()
-                # print("unsa_core",unsa_core)
                 for name in unsa_core:
-                    # print(type(name))
-                    print("unsa_core", unsa_path[name])
+                    if name not in unsa_path:
+                        continue
+                    # print("unsa_core", unsa_path[name])
                     unsa_result.append(unsa_path[name])
                 # TODO  get the statements for the unsatisfied path
-                return {}
+                return unsa_result
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}
