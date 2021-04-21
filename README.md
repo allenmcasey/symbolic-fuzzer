@@ -39,7 +39,7 @@ limitations of these supported extensions.
   * `python src\run.py -i examples\check_triangle.py`
   * For help, or to see optional args: `python src\run.py -h`
 
-The argument passed with `-i INPUT` above can be replaced with other test files in the 
+<br>The argument passed with `-i INPUT` above can be replaced with other test files in the 
 `examples` directory, or any valid path to a Python file of your choice. The optional 
 arguments are as follows:
 
