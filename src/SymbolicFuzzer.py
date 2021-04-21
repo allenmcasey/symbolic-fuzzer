@@ -260,9 +260,6 @@ class SimpleSymbolicFuzzer(Fuzzer):
 
         self.fn_name = function_names[index]
         self.function_names = function_names
-        # py_cfg = PyCFG()
-        # py_cfg.gen_cfg(arbitary_code)
-        # py_cfg = function_CFGs[fn_name]
         self.py_cfg = py_cfg
         self.fnenter, self.fnexit = self.py_cfg.functions[self.fn_name]
 
@@ -643,29 +640,6 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     completed.append(path)
             path_lst = new_paths
         return completed + path_lst
-
-    # def get_all_paths(self, fenter):
-    #     path_lst = [PNode(0, fenter)]
-    #     completed = []
-    #     for i in range(self.max_iter):
-    #         new_paths = [PNode(0, fenter)]
-    #         for path in path_lst:
-    #             # explore each path once
-    #             if path.cfgnode.children:
-    #                 np = path.explore()
-    #                 for p in np:
-    #                     if path.idx > self.max_depth:
-    #                         break
-    #                     print(p)
-    #                     if self.can_be_satisfied(p):
-    #                         new_paths.append(p)
-    #                     else:
-    #                         break
-    #             else:
-    #                 completed.append(path)
-    #         path_lst = new_paths
-    #     sys.exit(0)
-    #     return completed + path_lst
 
 
     def can_be_satisfied(self, p):
