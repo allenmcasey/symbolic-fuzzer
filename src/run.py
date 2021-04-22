@@ -5,9 +5,10 @@ import tempfile
 import ast
 import astor
 import sys
+import inspect
 import ConstantDetector
 from fuzzingbook.ControlFlow import gen_cfg, PyCFG
-from SymbolicFuzzer import AdvancedSymbolicFuzzer
+from SymbolicFuzzer import AdvancedSymbolicFuzzer,SimpleSymbolicFuzzer
 
 
 def main(args):
@@ -54,12 +55,41 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
     asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg,\
                 max_depth=max_depth, max_tries=max_tries, max_iter=max_iter)
     # print(asymfz_ct.used_variables)
+    # print("code_String", code_string)
     paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
+
+    # =====================get the origin statement=========================
+    print(len(paths))
+    # print(paths)
+    # print(type(paths))
+    # src = {i + 1: s for i, s in enumerate(
+    #     inspect.getsource(function_names).split('\n'))}
+    # print(type(src))
+    # for i in paths:
+    #     print(astor.to_source(i))
+    a = paths[1]
+    # print(type(paths[1]))
+    # print(paths[1])
+    print(paths[1].get_path_to_root())
+
+    # str = root.__str__()
+    pNodeList = paths[2].get_path_to_root()
+
+    for node in pNodeList:
+       a = node.parent
+       b = node.cfgnode.to_json()
+       at = b['at']
+       ast = b['ast']
+       print("Line NO.:",at,":",ast)
+       print("====end======")
+
+    # ======================================================================
     num_of_paths = 0
     used_constraint = []
     functions_with_constant = {}
 
     for i in range(len(paths)):
+        # print("i======", i)
         constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
         constraint_key = '__'.join(constraint)
         if constraint_key in used_constraint or len(constraint) < 2:
@@ -75,6 +105,7 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
             functions_with_constant.update(function_with_constant)
         # constraints
         print('Contraint Path: ', constraint)
+
         print('Contraint Arguments: ', asymfz_ct.solve_constraint(constraint))
 
     if check_constant:
