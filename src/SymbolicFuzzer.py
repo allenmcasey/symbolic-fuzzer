@@ -97,6 +97,7 @@ def get_expression(src):
 
 
 def to_src(astnode):
+    # print("to_src", astor.to_source(astnode))
     return astor.to_source(astnode).strip()
 
 
@@ -548,7 +549,7 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
         return result
         # return [to_src(p) for p in to_single_assignment_predicates(path) if p]
 
-    def solve_constraint(self, constraints):
+    def solve_constraint(self, constraints, pNodeList):
         # re-initializing does not seem problematic.
         # a = z3.Int('a').get_id() remains the same.
         identifiers = [c for i in constraints for c in used_identifiers(i)]  # <- changes
@@ -565,27 +566,33 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             unsa_path = {}
             unsa_result =[]
             for con in constraints:
-                # print("con: ",con)
+                print("con: ",con)
                 st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
                 # print('---------- st: ', st2)
                 i=i+1
                 path_name = 'p'+ str(i)
                 unsa_path[z3.Bool(path_name)] = con
                 eval(st2)
-
             if self.z3.check() != z3.sat:
                 print(" ============= ERROR: UNSAT PATH FOUND       ============= \n\t",\
                  {k: solutions.get(k, None) for k in self.fn_args})
-
                 print("unsat_core_length", len(self.z3.unsat_core()))
                 unsa_core = self.z3.unsat_core()
                 for name in unsa_core:
                     if name not in unsa_path:
                         continue
-                    # print("unsa_core", unsa_path[name])
+                    print("unsa_core", unsa_path[name])
                     unsa_result.append(unsa_path[name])
                 # TODO  get the statements for the unsatisfied path
-                return unsa_result
+                print("the statements that it belongs to: ")
+                for node in pNodeList:
+                    # ppp = node.parent
+                    cfgnode_json = node.cfgnode.to_json()
+                    at = cfgnode_json['at']
+                    ast = cfgnode_json['ast']
+                    print("Line number.:", at, ":", ast)
+                # return unsa_result
+                return {}
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}

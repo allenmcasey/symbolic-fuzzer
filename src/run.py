@@ -58,32 +58,6 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
     # print("code_String", code_string)
     paths = asymfz_ct.get_all_paths(asymfz_ct.fnenter)
 
-    # =====================get the origin statement=========================
-    print(len(paths))
-    # print(paths)
-    # print(type(paths))
-    # src = {i + 1: s for i, s in enumerate(
-    #     inspect.getsource(function_names).split('\n'))}
-    # print(type(src))
-    # for i in paths:
-    #     print(astor.to_source(i))
-    a = paths[1]
-    # print(type(paths[1]))
-    # print(paths[1])
-    print(paths[1].get_path_to_root())
-
-    # str = root.__str__()
-    pNodeList = paths[2].get_path_to_root()
-
-    for node in pNodeList:
-       a = node.parent
-       b = node.cfgnode.to_json()
-       at = b['at']
-       ast = b['ast']
-       print("Line NO.:",at,":",ast)
-       print("====end======")
-
-    # ======================================================================
     num_of_paths = 0
     used_constraint = []
     functions_with_constant = {}
@@ -106,7 +80,7 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
         # constraints
         print('Contraint Path: ', constraint)
 
-        print('Contraint Arguments: ', asymfz_ct.solve_constraint(constraint))
+        print('Contraint Arguments: ', asymfz_ct.solve_constraint(constraint,paths[i].get_path_to_root()))
 
     if check_constant:
         print(check_constant)
