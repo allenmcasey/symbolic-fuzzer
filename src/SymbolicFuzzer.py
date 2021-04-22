@@ -571,8 +571,7 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                 unsa_path[z3.Bool(path_name)] = con
                 eval(st2)
             if self.z3.check() != z3.sat:
-                print(" ================== ERROR: UNSAT PATH FOUND =================== \n\t",\
-                 {k: solutions.get(k, None) for k in self.fn_args})
+                print("\n================== ERROR: UNSAT PATH FOUND ===================\n")
                 print("Unsat core length:", len(self.z3.unsat_core()))
                 unsa_core = self.z3.unsat_core()
                 print("Unsat core: ")
@@ -587,7 +586,7 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     cfgnode_json = node.cfgnode.to_json()
                     at = cfgnode_json['at']
                     ast = cfgnode_json['ast']
-                    print("\tLine number", at, ":", ast)
+                    print("\tLine", at, ":", ast)
                 # return unsa_result
                 return {}
             m = self.z3.model()
