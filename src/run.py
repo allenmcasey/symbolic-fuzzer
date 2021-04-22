@@ -14,6 +14,7 @@ from SymbolicFuzzer import AdvancedSymbolicFuzzer,SimpleSymbolicFuzzer
 def main(args):
     # ============================ read input program as code_string ============================
     input_program = args.input
+    output_path = args.output
     selected_function_name = args.func
     check_constant = args.constant
     max_depth = args.depth
@@ -27,6 +28,7 @@ def main(args):
     # create AST from source file; get string
     astree = astor.parse_file(input_program)
     code_string = astor.to_source(astree)
+    results = []
 
     # ============================ CFG generation ============================
     # get CFG of each defined fn
@@ -42,16 +44,26 @@ def main(args):
     # only check selected function
     if selected_function_name:
         print_func(selected_function_name)
-        analyze_program(code_string, function_names, selected_index, py_cfg, max_depth, max_tries, max_iter, check_constant)
+        results += analyze_program(code_string, function_names, selected_index, py_cfg, max_depth, max_tries, max_iter, check_constant)
     # analyze all functions from input program
     else:
         for i in range(len(function_names)):
             print_func(function_names[i])
-            analyze_program(code_string, function_names, i, py_cfg, max_depth, max_tries, max_iter, check_constant)
+            results += analyze_program(code_string, function_names, i, py_cfg, max_depth, max_tries, max_iter, check_constant)
 
+    generate_report(results, output_path, input_program)
 
 # analysis
 def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_tries, max_iter, check_constant, insert_constant=[]):
+    results = []
+    single_result = {}
+    if insert_constant:
+        single_result['fn_name'] = function_names[index] + "(RE-CHECKED)" 
+    else:
+        single_result['fn_name'] = function_names[index]
+    single_result['max_depth'] = max_depth
+    single_result['max_tries'] = max_tries
+    single_result['max_iter'] = max_iter
     asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg,\
                 max_depth=max_depth, max_tries=max_tries, max_iter=max_iter)
     # print(asymfz_ct.used_variables)
@@ -79,20 +91,28 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
             functions_with_constant.update(function_with_constant)
         # constraints
         print('Contraint Path: ', constraint)
-        if asymfz_ct.solve_constraint(constraint,paths[i].get_path_to_root()):
-            print('Contraint Arguments: ', asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root()))
+        # if asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root()):
+        solved_args, unsat = asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root())
+        if unsat:
+            single_result['UNSAT'] = solved_args
+            print('Contraint Arguments (UNSAT): ', solved_args)
+        else:
+            print('Contraint Arguments: ', solved_args)
 
+    results.append(single_result)
 
     if check_constant:
         print(check_constant)
-        print('########################## RE-CHECK FUNCTIONS CALL WITH CONSTANT VALUES ########################## ')
-        recheck_func_with_constant(functions_with_constant, code_string,\
+        print('########################## RE-CHECK FUNCTION CALL WITH CONSTANT VALUES ########################## ')
+        results += recheck_func_with_constant(functions_with_constant, code_string,\
                                 function_names, index, py_cfg, max_depth, max_tries, max_iter)
 
+    return results
 
 # re-check some functions which with constant input argument values
 def recheck_func_with_constant(functions_with_constant, code_string,\
                             function_names, index, py_cfg, max_depth, max_tries, max_iter):
+    results = []
     for fc_name_key in functions_with_constant:
         fc_name = fc_name_key.split('**')[0]
         arg_values = functions_with_constant[fc_name_key]
@@ -100,9 +120,9 @@ def recheck_func_with_constant(functions_with_constant, code_string,\
         print("########################## ", fc_name, arg_values)
         for index, fn_name in enumerate(function_names):
             if fn_name == fc_name:
-                analyze_program(code_string, function_names, index, py_cfg,
+                results += analyze_program(code_string, function_names, index, py_cfg,
                         max_depth, max_tries, max_iter, False, insert_constant=arg_values)
-                
+    return results    
 
 
 # generate additional consraints for constant values
@@ -141,8 +161,15 @@ def print_func(s):
 
 
 # generate a report for UNSAT constraint path
-def report():
-    pass
+def generate_report(results, output_path, input_program):
+    filename = input_program.split('/')[-1]
+    filename = output_path + '/' + filename + '_report.txt'
+    with open(filename, 'w+') as f: 
+        for result in results:
+            f.write('################## Function Name: ' + result["fn_name"] + ' ##################\n')
+            for item in result:
+                f.write(item + ': ' + str(result[item]) + '\n')
+    
 
 
 # main 
@@ -152,10 +179,11 @@ if __name__ == "__main__":
     # ============== required arguments ==============
     parser.add_argument("-i", "--input", help="input program path", type=str, required=True)
     # ============== optional arguments ==============
+    parser.add_argument("-o", "--output", help="output path for report", type=str, default="reports/")
     parser.add_argument("-d", "--depth", help="max depth", type=int, default=10)
     parser.add_argument("-t", "--tries", help="max tries", type=int, default=10)
     parser.add_argument("-r", "--iter", help="max iterations", type=int, default=10)
     parser.add_argument("-f", "--func", help="specify function name", type=str, default=None)
-    parser.add_argument("-c", "--constant", help="re-check function if constant detected", type=int, default=1)
+    parser.add_argument("-c", "--constant", help="re-check function if constant detected (0: False - 1: True (default))", type=int, default=1)
     args = parser.parse_args()
     main(args)

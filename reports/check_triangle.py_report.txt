@@ -1,0 +1,29 @@
+################## Function Name: is_divisible_by_3_5 ##################
+fn_name: is_divisible_by_3_5
+max_depth: 10
+max_tries: 10
+max_iter: 10
+UNSAT: {}
+################## Function Name: is_divisible_by_3_5_without_constant ##################
+fn_name: is_divisible_by_3_5_without_constant
+max_depth: 10
+max_tries: 10
+max_iter: 10
+################## Function Name: check_triangle ##################
+fn_name: check_triangle
+max_depth: 10
+max_tries: 10
+max_iter: 10
+UNSAT: {}
+################## Function Name: check_triangle2 ##################
+fn_name: check_triangle2
+max_depth: 10
+max_tries: 10
+max_iter: 10
+UNSAT: {}
+################## Function Name: is_divisible_by_3_5(RE-CHECKED) ##################
+fn_name: is_divisible_by_3_5(RE-CHECKED)
+max_depth: 10
+max_tries: 10
+max_iter: 10
+UNSAT: {}

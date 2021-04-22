@@ -588,13 +588,13 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     ast = cfgnode_json['ast']
                     print("\tLine", at, ":", ast)
                 # return unsa_result
-                return {}
+                return {}, True
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}
         predicate = 'z3.And(%s)' % ','.join(["%s == %s" % (k, v) for k, v in my_args.items() if v is not None])
         eval('self.z3.add(z3.Not(%s))' % predicate)
-        return my_args
+        return my_args, False
 
     def solve_path_constraint(self, path):
         # re-initializing does not seem problematic.
