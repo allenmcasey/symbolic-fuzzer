@@ -560,37 +560,34 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
         solutions = {}
         with checkpoint(self.z3):
             print('origin constraints: ', constraints)
-            # print("length",len(constraints))
-            # print(constraints[0])
             i = 0
             unsa_path = {}
             unsa_result =[]
             for con in constraints:
                 print("con: ",con)
                 st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
-                # print('---------- st: ', st2)
                 i=i+1
                 path_name = 'p'+ str(i)
                 unsa_path[z3.Bool(path_name)] = con
                 eval(st2)
             if self.z3.check() != z3.sat:
-                print(" ============= ERROR: UNSAT PATH FOUND       ============= \n\t",\
+                print(" ================== ERROR: UNSAT PATH FOUND =================== \n\t",\
                  {k: solutions.get(k, None) for k in self.fn_args})
-                print("unsat_core_length", len(self.z3.unsat_core()))
+                print("Unsat core length:", len(self.z3.unsat_core()))
                 unsa_core = self.z3.unsat_core()
-                for name in unsa_core:
-                    if name not in unsa_path:
+                print("Unsat core: ")
+                for i in range(len(unsa_core)):
+                    if unsa_core[i] not in unsa_path:
                         continue
-                    print("unsa_core", unsa_path[name])
-                    unsa_result.append(unsa_path[name])
-                # TODO  get the statements for the unsatisfied path
-                print("the statements that it belongs to: ")
+                    print("\t",i+1,":", unsa_path[unsa_core[i]])
+                    unsa_result.append(unsa_path[unsa_core[i]])
+
+                print("Statements in Unsat Path: ")
                 for node in pNodeList:
-                    # ppp = node.parent
                     cfgnode_json = node.cfgnode.to_json()
                     at = cfgnode_json['at']
                     ast = cfgnode_json['ast']
-                    print("Line number.:", at, ":", ast)
+                    print("\tLine number", at, ":", ast)
                 # return unsa_result
                 return {}
             m = self.z3.model()

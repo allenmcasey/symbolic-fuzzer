@@ -79,8 +79,9 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
             functions_with_constant.update(function_with_constant)
         # constraints
         print('Contraint Path: ', constraint)
+        if asymfz_ct.solve_constraint(constraint,paths[i].get_path_to_root()):
+            print('Contraint Arguments: ', asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root()))
 
-        print('Contraint Arguments: ', asymfz_ct.solve_constraint(constraint,paths[i].get_path_to_root()))
 
     if check_constant:
         print(check_constant)
