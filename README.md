@@ -12,7 +12,7 @@ functionality of the fuzzingbook.SymbolicFuzzer tool provided by The Fuzzing Boo
   core up the path back to the source
   
 Please refer to the section **Assumptions We Make** below for more information on the
-limitations of these supported extensions.
+limitations of these supported extensions. <br><br>
 
 
 ### Installation
@@ -28,7 +28,7 @@ limitations of these supported extensions.
   * `cd symbolic-fuzzer`
   * `python3 -m venv venv_name`
   * `.\venv_name\Scripts\activate.bat`
-  * `pip install -r requirements.txt`
+  * `pip install -r requirements.txt`<br><br>
 
 ### How To Run
 `Unix:`
@@ -48,7 +48,7 @@ arguments are as follows:
   * `-t TRIES, --tries TRIES`: maximum tries to produce a value
   * `-r ITER, --iter ITER`: maximum iterations to generate paths
   * `-f FUNC, --func FUNC`: specify the name of the function in the file that you'd like to analyze
-  * `-c CONSTANT, --constant CONSTANT`: re-check function if constant is detected
+  * `-c CONSTANT, --constant CONSTANT`: re-check function if constant is detected<br><br>
   
 ### Using the Tool
 
@@ -87,13 +87,13 @@ causing an unsatisfiable path in two simple steps:
   1. Use the unsat core to determine the conflicting boolean constraints
   2. Find these constraints in the unsat path source, then modify your code accordingly
   
-TODO: describe use of re-check when constants detected
+TODO: describe use of re-check when constants detected<br><br>
 
 ### Assumptions We Make
 
   * Functions in input file are not recursive, and all functions called from other functions are self-contained
   * All variables are annotated with the type information, and the only containers used in the programs will be of type List with the maximum size 10
-  * Lists cannot be passed as arguments to functions, they can only be initialized inside of a function body
+  * Lists cannot be passed as arguments to functions, they can only be initialized inside of a function body<br><br>
 
 ### Requirements of the Tool
 
@@ -101,7 +101,7 @@ TODO: describe use of re-check when constants detected
   * Each constraint should be traceable to the part of code that created the constraint
   * If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to
   * If a function calls other functions, the paths of the called function(s) should be taken into account
-  * Lists with a maximum length of 10 should result in correct constraints
+  * Lists with a maximum length of 10 should result in correct constraints<br><br>
   
 ### Implementation Strategies
 
@@ -111,7 +111,7 @@ being analyzed. The Advanced fuzzer already contained many features needed to im
 **Requirements of the Tool** section above, but in order to fully support these requirements, significant additions to the 
 AdvancedFuzzer needed to be made. An overview of these additions is below.
 
-TODO: Describe changes made to AdvancedFuzzer class
+TODO: Describe changes made to AdvancedFuzzer class<br><br>
 
 ### References
   * https://www.fuzzingbook.org/html/SymbolicFuzzer.html
