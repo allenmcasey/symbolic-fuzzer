@@ -9,7 +9,7 @@ import inspect
 import ConstantDetector
 from fuzzingbook.ControlFlow import gen_cfg, PyCFG
 from SymbolicFuzzer import AdvancedSymbolicFuzzer,SimpleSymbolicFuzzer
-
+import platform
 
 def main(args):
     # ============================ read input program as code_string ============================
@@ -165,8 +165,13 @@ def print_func(s):
 
 # generate a report for UNSAT constraint path
 def generate_report(results, output_path, input_program):
-    filename = input_program.split('/')[-1]
-    filename = output_path + '/' + filename + '_report.txt'
+    if platform.system() == "Windows":
+        filename = input_program.split('\\')[-1]
+        filename = output_path + '\\' + filename + '_report.txt'
+    else:
+        filename = input_program.split('/')[-1]
+        filename = output_path + '/' + filename + '_report.txt'
+
     with open(filename, 'w+') as f: 
         f.write('===========================================================================\n')
         f.write('===================== UNSAT PATH REPORT START =============================\n')
