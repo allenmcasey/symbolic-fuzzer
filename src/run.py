@@ -20,6 +20,8 @@ def main(args):
     max_depth = args.depth
     max_iter = args.iter
     max_tries = args.tries
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
     # ============================ Initialization ============================
     function_names = []
