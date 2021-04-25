@@ -58,12 +58,12 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
     results = []
     single_result = {}
     if insert_constant:
-        single_result['fn_name'] = function_names[index] + "(RE-CHECKED)" 
+        r_fn_name = function_names[index] + " (CHECK-WITH-CONSTANT-VARIABLES)" 
     else:
-        single_result['fn_name'] = function_names[index]
-    single_result['max_depth'] = max_depth
-    single_result['max_tries'] = max_tries
-    single_result['max_iter'] = max_iter
+        r_fn_name = function_names[index]
+
+    single_result[r_fn_name] = []
+
     asymfz_ct = AdvancedSymbolicFuzzer(code_string, function_names, index, py_cfg,\
                 max_depth=max_depth, max_tries=max_tries, max_iter=max_iter)
     # print(asymfz_ct.used_variables)
@@ -73,7 +73,6 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
     num_of_paths = 0
     used_constraint = []
     functions_with_constant = {}
-
     for i in range(len(paths)):
         # print("i======", i)
         constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
@@ -93,13 +92,17 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
         print('Contraint Path: ', constraint)
         # if asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root()):
         solved_args, unsat = asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root())
+        solved_args['*constraint*'] = constraint
+        if insert_constant:
+            solved_args['*constant*'] = insert_constant
+        single_result[r_fn_name].append(solved_args)
         if unsat:
-            single_result['UNSAT'] = solved_args
-            print('Contraint Arguments (UNSAT): ', solved_args)
+            # print('Contraint Arguments (UNSAT): ', solved_args)
+            continue
         else:
             print('Contraint Arguments: ', solved_args)
-
     results.append(single_result)
+    
 
     if check_constant:
         print(check_constant)
@@ -165,12 +168,45 @@ def generate_report(results, output_path, input_program):
     filename = input_program.split('/')[-1]
     filename = output_path + '/' + filename + '_report.txt'
     with open(filename, 'w+') as f: 
+        f.write('===========================================================================\n')
+        f.write('===================== UNSAT PATH REPORT START =============================\n')
+        f.write('===========================================================================\n\n')
         for result in results:
-            f.write('################## Function Name: ' + result["fn_name"] + ' ##################\n')
-            for item in result:
-                f.write(item + ': ' + str(result[item]) + '\n')
-    
+            for fn_name in result:
+                if result[fn_name]:
+                    f.write('\n################ FUNCTION NAME: ' + fn_name +  ' ################\n')
+                    for elements in result[fn_name]:
+                        if '*core*' in elements:
+                            if '*constant*' in elements:
+                                f.write('\n==============================================================\n')
+                                f.write( 'Variables: ' + ', '.join(elements['*constant*'])+ '\n')
+                            for s in elements['*core*']:
+                                f.write(s + '\n')
+                            for s in elements['*statement*']:
+                                f.write(s + '\n')
+                    f.write('\n' + '#' * (len(fn_name)+48) +  '\n')
 
+    with open(filename, 'a+') as f: 
+        f.write('\n\n===========================================================================\n')
+        f.write('===================== OTHER SATISIED PATH CHECKED =========================\n')
+        f.write('===========================================================================\n\n')
+        for result in results:
+            for fn_name in result:
+                if result[fn_name]:
+                    f.write('\n################ FUNCTION NAME: ' + fn_name +  ' ################\n')
+                    for elements in result[fn_name]:
+                        if '*core*' not in elements:
+                            for e_key in elements:
+                                # ss = dict(elements[e_key])
+                                if e_key == '*constraint*':
+                                    f.write('============ Contraint Path ============\n')
+                                    for s in elements['*constraint*']:
+                                        f.write(s + '\n') 
+                                    f.write('========================================\n\n')
+                                else:
+                                    f.write( str(e_key) + ": " + str(elements[e_key]) + '\n')
+
+                    f.write('\n' + '#' * (len(fn_name)+48) +  '\n')
 
 # main 
 if __name__ == "__main__":

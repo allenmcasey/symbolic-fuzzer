@@ -19,7 +19,7 @@ def check_constant(variable, constraints, location):
             value = ct.split(' == ')[-1].strip()
             if is_number(value):
                 constant = value
-                # print(constant)
+    print('#########################', constraints, constant)
     return constant
 
 

@@ -423,7 +423,7 @@ def to_single_assignment_predicates(path):
         elif isinstance(ast_node, ast.AnnAssign) and ast_node.target.id in {'_if', '_while'}:
             new_node = rename_variables(ast_node.annotation, env)
             if node.order != 0:
-                assert node.order == 1
+                # assert node.order == 1
                 if node.order != 1:
                     return [], False
                 new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
@@ -562,7 +562,7 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             print('origin constraints: ', constraints)
             i = 0
             unsa_path = {}
-            unsa_result =[]
+
             for con in constraints:
                 print("con: ",con)
                 st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
@@ -571,24 +571,34 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                 unsa_path[z3.Bool(path_name)] = con
                 eval(st2)
             if self.z3.check() != z3.sat:
+                unsat_info_dict = {}
+                unsat_info_dict['*core*'] = []
+                unsat_info_dict['*statement*'] = []
+
+                unsat_info_dict['*core*'].append("\n================== ERROR: UNSAT PATH FOUND ===================")
                 print("\n================== ERROR: UNSAT PATH FOUND ===================\n")
+                unsat_info_dict['*core*'].append("Unsat core length:" + str(len(self.z3.unsat_core())))
                 print("Unsat core length:", len(self.z3.unsat_core()))
                 unsa_core = self.z3.unsat_core()
+                unsat_info_dict['*core*'].append("Unsat core: ")
                 print("Unsat core: ")
                 for i in range(len(unsa_core)):
                     if unsa_core[i] not in unsa_path:
                         continue
+                    unsat_info_dict['*core*'].append("\t" + str(i+1) + ":" + str(unsa_path[unsa_core[i]]))
                     print("\t",i+1,":", unsa_path[unsa_core[i]])
-                    unsa_result.append(unsa_path[unsa_core[i]])
+                    # unsa_result.append(unsa_path[unsa_core[i]])
 
+                unsat_info_dict['*statement*'].append("Statements in Unsat Path: ")
                 print("Statements in Unsat Path: ")
                 for node in pNodeList:
                     cfgnode_json = node.cfgnode.to_json()
                     at = cfgnode_json['at']
                     ast = cfgnode_json['ast']
+                    unsat_info_dict['*statement*'].append("\tLine" + str(at) + ":" + str(ast))
                     print("\tLine", at, ":", ast)
                 # return unsa_result
-                return {}, True
+                return unsat_info_dict, True
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}
