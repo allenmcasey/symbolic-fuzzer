@@ -76,28 +76,26 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
     used_constraint = []
     functions_with_constant = {}
     for i in range(len(paths)):
-        # print("i======", i)
         constraint,node_list = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
-        # print("node_list", len(node_list))
-        # print("constraint", constraint)
+
         constraint_key = '__'.join(constraint)
         if constraint_key in used_constraint or len(constraint) < 2:
             continue
         num_of_paths += 1
         print('\n ---------------------------------------- path: ' + str(num_of_paths)+ ' ---------------------------------------- ')
         used_constraint.append(constraint_key)
-        # print(constraint)
-        constraint, function_with_constant = ConstantDetector.check_function_call(constraint, function_names)
+        constraint, function_with_constant, new_node_list = ConstantDetector.check_function_call(constraint, function_names, node_list)
+
         if insert_constant:
             constraint = generate_constraint_constant(insert_constant, constraint)
         if check_constant:
             functions_with_constant.update(function_with_constant)
         # constraints
+
         constraint = clean_constraint(constraint, function_names)
-        print('Contraint Path: ', constraint)
+
         # if asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root()):
-        # solved_args, unsat = asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root())
-        solved_args, unsat = asymfz_ct.solve_constraint(constraint, node_list)
+        solved_args, unsat = asymfz_ct.solve_constraint(constraint, new_node_list)
         solved_args['*constraint*'] = constraint
         if insert_constant:
             solved_args['*constant*'] = insert_constant

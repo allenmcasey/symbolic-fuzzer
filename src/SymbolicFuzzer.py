@@ -426,7 +426,7 @@ def to_single_assignment_predicates(path):
             if node.order != 0:
                 # assert node.order == 1
                 if node.order != 1:
-                    return [], False
+                    return [], False,[]
                 new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
 
         # fixed
@@ -577,13 +577,13 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             print('origin constraints: ', constraints)
             i = 0
             unsa_path = {}
-
+            unsa_nodes = []
             for con in constraints:
                 print("con: ",con)
                 st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
                 i=i+1
                 path_name = 'p'+ str(i)
-                unsa_path[z3.Bool(path_name)] = con
+                unsa_path[z3.Bool(path_name)] = [con, pNodeList[i-1]]
                 eval(st2)
             if self.z3.check() != z3.sat:
                 unsat_info_dict = {}
@@ -600,13 +600,14 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                 for i in range(len(unsa_core)):
                     if unsa_core[i] not in unsa_path:
                         continue
-                    unsat_info_dict['*core*'].append("\t" + str(i+1) + ":" + str(unsa_path[unsa_core[i]]))
-                    print("\t",i+1,":", unsa_path[unsa_core[i]])
-                    # unsa_result.append(unsa_path[unsa_core[i]])
+                    unsat_info_dict['*core*'].append("\t" + str(i+1) + ":" + str(unsa_path[unsa_core[i]][0]))
+                    unsa_nodes.append(unsa_path[unsa_core[i]][1])
+                    print("\t",i+1,":", unsa_path[unsa_core[i]][0])
+
 
                 unsat_info_dict['*statement*'].append("Statements in Unsat Path: ")
                 print("Statements in Unsat Path: ")
-                for node in pNodeList:
+                for node in unsa_nodes:
                     cfgnode_json = node.cfgnode.to_json()
                     at = cfgnode_json['at']
                     ast = cfgnode_json['ast']
@@ -614,6 +615,7 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     print("\tLine", at, ":", ast)
                 # return unsa_result
                 return unsat_info_dict, True
+
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}
