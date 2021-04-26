@@ -468,12 +468,6 @@ def to_single_assignment_predicates(path):
         new_path.append(new_node)
         if(new_node):
             node_list.append(node)
-        # for node in path:
-        #     cfgnode_json = node.cfgnode.to_json()
-        #     at = cfgnode_json['at']
-        #     ast = cfgnode_json['ast']
-        #     unsat_info_dict['*statement*'].append("\tLine" + str(at) + ":" + str(ast))
-        #     print("\tLine", at, ":", ast)
 
     return new_path, completed_path, node_list
 
@@ -579,13 +573,15 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             unsa_nodes = []
             for con in constraints:
                 unsat_info_dict['*con*'].append('\t' + str(con))
-                print("con: ",con)
+                print("constraints: ",con)
                 i = i + 1
+                if not pNodeList[i-1]:
+                    continue
                 st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
-
                 path_name = 'p'+ str(i)
                 unsa_path[z3.Bool(path_name)] = [con, pNodeList[i-1]]
                 eval(st2)
+
             if self.z3.check() != z3.sat:
                 unsat_info_dict['*core*'].append("--------- ERROR: UNSAT PATH FOUND --------")
                 print("\n================== ERROR: UNSAT PATH FOUND ===================\n")

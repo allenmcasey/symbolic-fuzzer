@@ -87,7 +87,7 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
         constraint, function_with_constant, new_node_list = ConstantDetector.check_function_call(constraint, function_names, node_list)
 
         if insert_constant:
-            constraint = generate_constraint_constant(insert_constant, constraint)
+            constraint = generate_constraint_constant(insert_constant, constraint, new_node_list)
         if check_constant:
             functions_with_constant.update(function_with_constant)
         # constraints
@@ -152,7 +152,7 @@ def recheck_func_with_constant(functions_with_constant, code_string,\
 
 
 # generate additional consraints for constant values
-def generate_constraint_constant(insert_constant, constraint):
+def generate_constraint_constant(insert_constant, constraint,node_list):
     constraint_args = constraint[0]
     if 'z3.And(' in constraint_args:
         args = constraint_args.split('(')[1].split(')')[0].split(',')
@@ -166,6 +166,7 @@ def generate_constraint_constant(insert_constant, constraint):
                     continue
                 temp = renamed_variable + ' == ' + str(y)
                 constraint.insert(1, temp)
+                node_list.insert(1,"")
     return constraint
 
 
