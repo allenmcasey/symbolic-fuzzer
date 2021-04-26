@@ -81,8 +81,7 @@ trace the path using the code itself:
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`Line 1 : enter: check_triangle(a, b, c)`<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`Line 2 : _if: a == b`<br>
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`Line 3 : _if: a == c`<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`Line 4 : _if: b == c`<br>
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`Line 7 : return 'Isosceles'`<br>
+
 
 If you combine all of the information printed above, you should be able to detect and resolve the statements in your program 
 causing an unsatisfiable path in two simple steps:
