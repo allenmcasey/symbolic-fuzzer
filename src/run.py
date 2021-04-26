@@ -77,7 +77,9 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
     functions_with_constant = {}
     for i in range(len(paths)):
         # print("i======", i)
-        constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
+        constraint,node_list = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
+        # print("node_list", len(node_list))
+        # print("constraint", constraint)
         constraint_key = '__'.join(constraint)
         if constraint_key in used_constraint or len(constraint) < 2:
             continue
@@ -94,7 +96,8 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
         constraint = clean_constraint(constraint, function_names)
         print('Contraint Path: ', constraint)
         # if asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root()):
-        solved_args, unsat = asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root())
+        # solved_args, unsat = asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root())
+        solved_args, unsat = asymfz_ct.solve_constraint(constraint, node_list)
         solved_args['*constraint*'] = constraint
         if insert_constant:
             solved_args['*constant*'] = insert_constant

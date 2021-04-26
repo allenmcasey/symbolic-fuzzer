@@ -406,6 +406,7 @@ def rename_variables(astnode, env):
 def to_single_assignment_predicates(path):
     env = {}
     new_path = []
+    node_list = []
     completed_path = False
     for i, node in enumerate(path):
         ast_node = node.cfgnode.ast_node
@@ -437,6 +438,7 @@ def to_single_assignment_predicates(path):
                     env[assigned] = 0
                     target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
                     new_path.append(ast.Expr(ast.Compare(target, [ast.Eq()], val)))
+                    node_list.append(node)
                 pass
             else:
                 assigned = ast_node.target.id
@@ -465,8 +467,19 @@ def to_single_assignment_predicates(path):
             continue
             # s = "NI %s %s" % (type(ast_node), ast_node.target.id)
             # raise Exception(s)
+
+
         new_path.append(new_node)
-    return new_path, completed_path
+        if(new_node):
+            node_list.append(node)
+        # for node in path:
+        #     cfgnode_json = node.cfgnode.to_json()
+        #     at = cfgnode_json['at']
+        #     ast = cfgnode_json['ast']
+        #     unsat_info_dict['*statement*'].append("\tLine" + str(at) + ":" + str(ast))
+        #     print("\tLine", at, ":", ast)
+
+    return new_path, completed_path, node_list
 
 
 def identifiers_with_types(identifiers, defined):
@@ -539,14 +552,16 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
 
     def extract_constraints(self, path):
         result = []
-        generated_path, completed = to_single_assignment_predicates(path)
+        generated_path, completed, node_list = to_single_assignment_predicates(path)
         if not completed:
-            return []
+            return [],[]
         for p in generated_path:
             # if (isinstance(p, ast.AnnAssign) and p.target.id in {'exit', 'return'}):
             if p:
                 result.append(to_src(p))
-        return result
+        # if not node_list:
+
+        return result, node_list
         # return [to_src(p) for p in to_single_assignment_predicates(path) if p]
 
     def solve_constraint(self, constraints, pNodeList):
