@@ -113,7 +113,7 @@ being analyzed. The Advanced fuzzer already contained many features needed to im
 **Requirements of the Tool** section above, but in order to fully support these requirements, significant additions to the 
 AdvancedFuzzer needed to be made. An overview of these additions is below.
 
-## Changes to AdvancedFuzzer class
+### Changes to AdvancedFuzzer class
   * Created a script called `SymbolicFuzzer.py` to override original one from Fuzzingbook
   * Changed input format for the class:
       - old: only take function name as input from same script
