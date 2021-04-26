@@ -51,7 +51,7 @@ arguments are as follows:
   * `-t TRIES, --tries TRIES`: maximum tries to produce a value
   * `-r ITER, --iter ITER`: maximum iterations to generate paths
   * `-f FUNC, --func FUNC`: specify the name of the function in the file that you'd like to analyze
-  * `-c CONSTANT, --constant CONSTANT`: re-check function if constant is detected. Devault setting is True<br><br>
+  * `-c CONSTANT, --constant CONSTANT`: re-check function if constant is detected. Default setting is True<br><br>
   
 ### Using the Tool
 
