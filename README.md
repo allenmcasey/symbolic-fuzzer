@@ -17,6 +17,7 @@ limitations of these supported extensions. <br><br>
 
 ### Installation
   This symbolic fuzzer works on Python 3.8+ (other versions should work as well, but not tested yet)
+  
 ` Unix:`
   * `git clone https://github.com/allenmcasey/symbolic-fuzzer.git`
   * `python3 -m venv venv_name`
