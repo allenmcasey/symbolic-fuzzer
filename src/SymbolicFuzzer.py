@@ -569,11 +569,16 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
 
         solutions = {}
         with checkpoint(self.z3):
+            unsat_info_dict = {}
+            unsat_info_dict['*core*'] = []
+            unsat_info_dict['*statement*'] = []
+            unsat_info_dict['*con*'] = []
             print('origin constraints: ', constraints)
             i = 0
             unsa_path = {}
             unsa_nodes = []
             for con in constraints:
+                unsat_info_dict['*con*'].append('\t' + str(con))
                 print("con: ",con)
                 i = i + 1
                 st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
@@ -582,13 +587,9 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                 unsa_path[z3.Bool(path_name)] = [con, pNodeList[i-1]]
                 eval(st2)
             if self.z3.check() != z3.sat:
-                unsat_info_dict = {}
-                unsat_info_dict['*core*'] = []
-                unsat_info_dict['*statement*'] = []
-
-                unsat_info_dict['*core*'].append("\n================== ERROR: UNSAT PATH FOUND ===================")
+                unsat_info_dict['*core*'].append("--------- ERROR: UNSAT PATH FOUND --------")
                 print("\n================== ERROR: UNSAT PATH FOUND ===================\n")
-                unsat_info_dict['*core*'].append("Unsat core length:" + str(len(self.z3.unsat_core())))
+                unsat_info_dict['*core*'].append("Unsat core length: " + str(len(self.z3.unsat_core())))
                 print("Unsat core length:", len(self.z3.unsat_core()))
                 unsa_core = self.z3.unsat_core()
 
@@ -615,7 +616,7 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     cfgnode_json = node.cfgnode.to_json()
                     at = cfgnode_json['at']
                     ast = cfgnode_json['ast']
-                    unsat_info_dict['*statement*'].append("\tLine" + str(at) + ":" + str(ast))
+                    unsat_info_dict['*statement*'].append("\tLine " + str(at) + ":" + str(ast))
                     print("\tLine", at, ":", ast)
                 # return unsa_result
                 return unsat_info_dict, True

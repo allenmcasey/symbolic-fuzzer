@@ -206,12 +206,18 @@ def generate_report(results, output_path, input_program):
                     for elements in result[fn_name]:
                         if '*core*' in elements:
                             if '*constant*' in elements:
-                                f.write('\n==============================================================\n')
+                                f.write('\n========================================\n')
                                 f.write( 'Variables: ' + ', '.join(elements['*constant*'])+ '\n')
+                            f.write("============ Contraint Path ============\n")
+                            # f.write( 'Constraints: \n')   
+                            for s in elements['*con*']:
+                                f.write(s + '\n')
                             for s in elements['*core*']:
                                 f.write(s + '\n')
+                            f.write('----------------------------------------------\n')
                             for s in elements['*statement*']:
                                 f.write(s + '\n')
+                            f.write('========================================\n\n\n')
                     f.write('\n' + '#' * (len(fn_name)+48) +  '\n')
 
     with open(filename, 'a+') as f: 
