@@ -16,6 +16,7 @@ limitations of these supported extensions. <br><br>
 
 
 ### Installation
+  This symbolic fuzzer works on Python 3.8+ (other versions should work as well, but not tested yet)
 ` Unix:`
   * `git clone https://github.com/allenmcasey/symbolic-fuzzer.git`
   * `python3 -m venv venv_name`
@@ -24,10 +25,10 @@ limitations of these supported extensions. <br><br>
   * `pip install -r requirements.txt`
 
 `Windows:`
-  * `git clone https://github.com/allenmcasey/symbolic-fuzzer.git`
-  * `cd symbolic-fuzzer`
+  * `git clone https://github.com/allenmcasey/symbolic-fuzzer.git``
   * `python3 -m venv venv_name`
   * `.\venv_name\Scripts\activate.bat`
+  * `cd symbolic-fuzzer
   * `pip install -r requirements.txt`<br><br>
 
 ### How To Run
@@ -48,7 +49,7 @@ arguments are as follows:
   * `-t TRIES, --tries TRIES`: maximum tries to produce a value
   * `-r ITER, --iter ITER`: maximum iterations to generate paths
   * `-f FUNC, --func FUNC`: specify the name of the function in the file that you'd like to analyze
-  * `-c CONSTANT, --constant CONSTANT`: re-check function if constant is detected<br><br>
+  * `-c CONSTANT, --constant CONSTANT`: re-check function if constant is detected. Devault setting is True<br><br>
   
 ### Using the Tool
 
@@ -111,7 +112,19 @@ being analyzed. The Advanced fuzzer already contained many features needed to im
 **Requirements of the Tool** section above, but in order to fully support these requirements, significant additions to the 
 AdvancedFuzzer needed to be made. An overview of these additions is below.
 
-TODO: Describe changes made to AdvancedFuzzer class<br><br>
+## Changes to AdvancedFuzzer class
+  * Created a script called `SymbolicFuzzer.py` to override original one from Fuzzingbook
+  * Changed input format for the class:
+      - old: only take function name as input from same script
+      - new: we take filename from command then generate arbitary code as input for the class
+  * Changed `solve_path_constraint` to `solve_constraint`:
+      - old: input a path contraint and try to solve
+      - new: we check, analyze, and clean constraint path before call this function. Then, we take clean version of contraint as input to solve
+  * Added features into `solve_constraint`:
+      - old: return solve_args, but sometimes failed with assertion errors
+      - new: removed assertion error and return it even if empty object. Then, we collect all uncore information for the report
+  * Most of features are added outside of the class
+
 
 ### References
   * https://www.fuzzingbook.org/html/SymbolicFuzzer.html
