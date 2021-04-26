@@ -92,10 +92,10 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
             functions_with_constant.update(function_with_constant)
         # constraints
 
-        constraint = clean_constraint(constraint, function_names)
+        constraint,clean_node_list = clean_constraint(constraint, function_names, new_node_list)
 
         # if asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root()):
-        solved_args, unsat = asymfz_ct.solve_constraint(constraint, new_node_list)
+        solved_args, unsat = asymfz_ct.solve_constraint(constraint, clean_node_list)
         solved_args['*constraint*'] = constraint
         if insert_constant:
             solved_args['*constant*'] = insert_constant
@@ -113,13 +113,13 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
         print('########################## RE-CHECK FUNCTION CALL WITH CONSTANT VALUES ########################## ')
         results += recheck_func_with_constant(functions_with_constant, code_string,\
                                 function_names, index, py_cfg, max_depth, max_tries, max_iter)
-
     return results
 
 
 # we assume for loop as one time iteration
-def clean_constraint(constraint, function_names):
+def clean_constraint(constraint, function_names,node_list):
     new_contraint = []
+    clean_node_list = []
 
     for i, ct in enumerate(constraint):
         # remove for loop 
@@ -131,7 +131,8 @@ def clean_constraint(constraint, function_names):
             continue
         else:
             new_contraint.append(ct)
-    return new_contraint
+            clean_node_list.append(node_list[i])
+    return new_contraint, clean_node_list
 
 
 # re-check some functions which with constant input argument values

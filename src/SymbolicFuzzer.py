@@ -37,6 +37,7 @@ from graphviz import Source, Graph
 from fuzzingbook.Fuzzer import Fuzzer
 from contextlib import contextmanager
 
+
 # ============================ Helper Functions ============================
 
 
@@ -574,8 +575,9 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             unsa_nodes = []
             for con in constraints:
                 print("con: ",con)
+                i = i + 1
                 st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
-                i=i+1
+
                 path_name = 'p'+ str(i)
                 unsa_path[z3.Bool(path_name)] = [con, pNodeList[i-1]]
                 eval(st2)
@@ -589,14 +591,22 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                 unsat_info_dict['*core*'].append("Unsat core length:" + str(len(self.z3.unsat_core())))
                 print("Unsat core length:", len(self.z3.unsat_core()))
                 unsa_core = self.z3.unsat_core()
+
                 unsat_info_dict['*core*'].append("Unsat core: ")
                 print("Unsat core: ")
+                sorted_unsa_core = []
+
+                for i in range(len(unsa_core)):
+                    sorted_unsa_core.append(str(unsa_core[i]))
+
+                sorted_unsa_core.sort()
+
                 for i in range(len(unsa_core)):
                     if unsa_core[i] not in unsa_path:
                         continue
-                    unsat_info_dict['*core*'].append("\t" + str(i+1) + ":" + str(unsa_path[unsa_core[i]][0]))
-                    unsa_nodes.append(unsa_path[unsa_core[i]][1])
-                    print("\t",i+1,":", unsa_path[unsa_core[i]][0])
+                    unsat_info_dict['*core*'].append("\t" + str(i+1) + ":" + str(unsa_path[z3.Bool(sorted_unsa_core[i])][0]))
+                    unsa_nodes.append(unsa_path[z3.Bool(sorted_unsa_core[i])][1])
+                    print("\t",i+1,":", unsa_path[z3.Bool(sorted_unsa_core[i])][0])
 
 
                 unsat_info_dict['*statement*'].append("Statements in Unsat Path: ")
