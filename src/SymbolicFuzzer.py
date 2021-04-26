@@ -97,7 +97,6 @@ def get_expression(src):
 
 
 def to_src(astnode):
-    # print("to_src", astor.to_source(astnode))
     return astor.to_source(astnode).strip()
 
 
@@ -428,8 +427,6 @@ def to_single_assignment_predicates(path):
                 if node.order != 1:
                     return [], False,[]
                 new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
-
-        # fixed
         elif isinstance(ast_node, ast.AnnAssign):
             if isinstance(ast_node.value, ast.List):
                 for idx, element in enumerate(ast_node.value.elts):
@@ -446,8 +443,6 @@ def to_single_assignment_predicates(path):
                 env[assigned] = 0 if assigned not in env else env[assigned] + 1
                 target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
                 new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
-
-        # fixed
         elif isinstance(ast_node, ast.Assign):
             if isinstance(ast_node.targets[0], ast.Subscript):
                 identifier = to_src(ast_node.targets[0])
@@ -534,7 +529,6 @@ class PNode:
         while n:
             path.append(n)
             n = n.parent
-        # print(list(reversed(path)))
         return list(reversed(path))
 
     def __str__(self):
@@ -627,8 +621,8 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
         # re-initializing does not seem problematic.
         # a = z3.Int('a').get_id() remains the same.
         constraints = self.extract_constraints(path)
-        identifiers = [c for i in constraints for c in used_identifiers(i)]  # <- changes
-        with_types = identifiers_with_types(identifiers, self.used_variables)  # <- changes
+        identifiers = [c for i in constraints for c in used_identifiers(i)]
+        with_types = identifiers_with_types(identifiers, self.used_variables)
         decl = define_symbolic_vars(with_types, '')
         exec(decl)
 
@@ -661,10 +655,6 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     for p in np:
                         if path.idx > self.max_depth:
                             break
-                        # if self.can_be_satisfied(p):
-                        #     new_paths.append(p)
-                        # else:
-                        #     break
                         new_paths.append(p)
                 else:
                     completed.append(path)
@@ -674,16 +664,12 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
 
     def can_be_satisfied(self, p):
         s2 = self.extract_constraints(p.get_path_to_root())
-        # if any(fn_name in s2 for fn_name in self.function_names):
-        #     print("asdasdasdsadas")
-        # print(s2)
         s = z3.Solver()
         identifiers = [c for i in s2 for c in used_identifiers(i)]
         with_types = identifiers_with_types(identifiers, self.used_variables)
         decl = define_symbolic_vars(with_types, '')
         exec(decl)
         exec("s.add(z3.And(%s))" % ','.join(s2), globals(), locals())
-        # sys.exit(0)
         return s.check() == z3.sat
 
     def get_next_path(self):

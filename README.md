@@ -46,6 +46,7 @@ limitations of these supported extensions. <br><br>
 arguments are as follows:
 
   * `-h, --help`: get information on argument usage for this tool
+  * `-o OUTPUT, --output OUTPUT`: the output path for the analysis report
   * `-d DEPTH, --depth DEPTH`: maximum depth to explore in each path
   * `-t TRIES, --tries TRIES`: maximum tries to produce a value
   * `-r ITER, --iter ITER`: maximum iterations to generate paths
@@ -88,8 +89,6 @@ causing an unsatisfiable path in two simple steps:
 
   1. Use the unsat core to determine the conflicting boolean constraints
   2. Find these constraints in the unsat path source, then modify your code accordingly
-  
-TODO: describe use of re-check when constants detected<br><br>
 
 ### Assumptions We Make
 
@@ -104,14 +103,6 @@ TODO: describe use of re-check when constants detected<br><br>
   * If a path is unsatisfiable, the fuzzer should generate the corresponding unsat core and the statements that it belongs to
   * If a function calls other functions, the paths of the called function(s) should be taken into account
   * Lists with a maximum length of 10 should result in correct constraints<br><br>
-  
-### Implementation Strategies
-
-To begin development of this tool, we chose to augment the AdvancedSymbolicFuzzer class defined in fuzzingbook.SymbolicFuzzer. 
-We chose the Advanced fuzzer over the Simple fuzzer due its ability to correctly handle reassignments within the functions
-being analyzed. The Advanced fuzzer already contained many features needed to implement the requirements described in the 
-**Requirements of the Tool** section above, but in order to fully support these requirements, significant additions to the 
-AdvancedFuzzer needed to be made. An overview of these additions is below.
 
 ### Changes to AdvancedFuzzer class
   * Created a script called `SymbolicFuzzer.py` to override original one from Fuzzingbook
