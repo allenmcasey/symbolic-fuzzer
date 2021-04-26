@@ -25,7 +25,7 @@ limitations of these supported extensions. <br><br>
   * `pip install -r requirements.txt`
 
 `Windows:`
-  * `git clone https://github.com/allenmcasey/symbolic-fuzzer.git``
+  * `git clone https://github.com/allenmcasey/symbolic-fuzzer.git`
   * `python3 -m venv venv_name`
   * `.\venv_name\Scripts\activate.bat`
   * `cd symbolic-fuzzer`
