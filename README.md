@@ -124,7 +124,7 @@ AdvancedFuzzer needed to be made. An overview of these additions is below.
   * Added features into `solve_constraint`:
       - old: return solve_args, but sometimes failed with assertion errors
       - new: removed assertion error and return it even if empty object. Then, we collect all uncore information for the report
-  * Most of features are added outside of the class
+  * Many other features are added outside of the class
 
 
 ### References
