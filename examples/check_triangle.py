@@ -37,8 +37,8 @@ def check_triangle(a: int, b: int, c: int):
 
 
 def check_triangle2(a: int, b: int, c: int):
-    a = 1
-    if not is_divisible_by_3_5(a, b):
+    a = 10
+    if not is_divisible_by_3_5_without_constant(a, b):
         return 'Failed'
 
     if a == b:

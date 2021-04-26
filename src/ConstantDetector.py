@@ -24,9 +24,9 @@ def check_constant(variable, constraints, location):
 
 
 # check if there is a function call; constraint is a list of z3 tokens
-def check_function_call(constraints, function_names, node_list):
+def check_function_call(constraints, function_names):
     original_constraints = constraints
-    original_node_list = node_list
+    # original_node_list = node_list
     # print(constraints)
     removed_indexs = []
     function_with_args = {}
@@ -66,7 +66,7 @@ def check_function_call(constraints, function_names, node_list):
 
     for i in reversed(sorted(removed_indexs)):
         original_constraints.pop(i)
-        original_node_list.pop(i)
+        # original_node_list.pop(i)
 
     # print(function_with_constant)
-    return original_constraints, function_with_constant, original_node_list
+    return original_constraints, function_with_constant

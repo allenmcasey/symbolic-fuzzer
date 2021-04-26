@@ -37,7 +37,6 @@ from graphviz import Source, Graph
 from fuzzingbook.Fuzzer import Fuzzer
 from contextlib import contextmanager
 
-
 # ============================ Helper Functions ============================
 
 
@@ -98,6 +97,7 @@ def get_expression(src):
 
 
 def to_src(astnode):
+    # print("to_src", astor.to_source(astnode))
     return astor.to_source(astnode).strip()
 
 
@@ -406,7 +406,6 @@ def rename_variables(astnode, env):
 def to_single_assignment_predicates(path):
     env = {}
     new_path = []
-    node_list = []
     completed_path = False
     for i, node in enumerate(path):
         ast_node = node.cfgnode.ast_node
@@ -426,8 +425,10 @@ def to_single_assignment_predicates(path):
             if node.order != 0:
                 # assert node.order == 1
                 if node.order != 1:
-                    return [], False,[]
+                    return [], False
                 new_node = ast.Call(ast.Name('z3.Not', None), [new_node], [])
+
+        # fixed
         elif isinstance(ast_node, ast.AnnAssign):
             if isinstance(ast_node.value, ast.List):
                 for idx, element in enumerate(ast_node.value.elts):
@@ -436,7 +437,6 @@ def to_single_assignment_predicates(path):
                     env[assigned] = 0
                     target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
                     new_path.append(ast.Expr(ast.Compare(target, [ast.Eq()], val)))
-                    node_list.append(node)
                 pass
             else:
                 assigned = ast_node.target.id
@@ -444,6 +444,8 @@ def to_single_assignment_predicates(path):
                 env[assigned] = 0 if assigned not in env else env[assigned] + 1
                 target = ast.Name('_%s_%d' % (assigned, env[assigned]), None)
                 new_node = ast.Expr(ast.Compare(target, [ast.Eq()], val))
+
+        # fixed
         elif isinstance(ast_node, ast.Assign):
             if isinstance(ast_node.targets[0], ast.Subscript):
                 identifier = to_src(ast_node.targets[0])
@@ -463,13 +465,8 @@ def to_single_assignment_predicates(path):
             continue
             # s = "NI %s %s" % (type(ast_node), ast_node.target.id)
             # raise Exception(s)
-
-
         new_path.append(new_node)
-        if(new_node):
-            node_list.append(node)
-
-    return new_path, completed_path, node_list
+    return new_path, completed_path
 
 
 def identifiers_with_types(identifiers, defined):
@@ -524,6 +521,7 @@ class PNode:
         while n:
             path.append(n)
             n = n.parent
+        # print(list(reversed(path)))
         return list(reversed(path))
 
     def __str__(self):
@@ -541,16 +539,14 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
 
     def extract_constraints(self, path):
         result = []
-        generated_path, completed, node_list = to_single_assignment_predicates(path)
+        generated_path, completed = to_single_assignment_predicates(path)
         if not completed:
-            return [],[]
+            return []
         for p in generated_path:
             # if (isinstance(p, ast.AnnAssign) and p.target.id in {'exit', 'return'}):
             if p:
                 result.append(to_src(p))
-        # if not node_list:
-
-        return result, node_list
+        return result
         # return [to_src(p) for p in to_single_assignment_predicates(path) if p]
 
     def solve_constraint(self, constraints, pNodeList):
@@ -570,53 +566,42 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
             print('origin constraints: ', constraints)
             i = 0
             unsa_path = {}
-            unsa_nodes = []
-            for con in constraints:
-                unsat_info_dict['*con*'].append('\t' + str(con))
-                print("constraints: ",con)
-                i = i + 1
-                if not pNodeList[i-1]:
-                    continue
-                st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
-                path_name = 'p'+ str(i)
-                unsa_path[z3.Bool(path_name)] = [con, pNodeList[i-1]]
-                eval(st2)
 
+            for con in constraints:
+                print("con: ", '\t' +  con)
+                unsat_info_dict['*con*'].append(str(con))
+                st2 = 'self.z3.assert_and_track(%s,"p%s")' % (con,str(i))
+                i=i+1
+                path_name = 'p'+ str(i)
+                unsa_path[z3.Bool(path_name)] = con
+                eval(st2)
             if self.z3.check() != z3.sat:
-                unsat_info_dict['*core*'].append("--------- ERROR: UNSAT PATH FOUND --------")
+
+
+                # unsat_info_dict['*core*'].append("\n================== ERROR: UNSAT PATH FOUND ===================")
                 print("\n================== ERROR: UNSAT PATH FOUND ===================\n")
-                unsat_info_dict['*core*'].append("Unsat core length: " + str(len(self.z3.unsat_core())))
+                unsat_info_dict['*core*'].append("Unsat core length:" + str(len(self.z3.unsat_core())))
                 print("Unsat core length:", len(self.z3.unsat_core()))
                 unsa_core = self.z3.unsat_core()
-
                 unsat_info_dict['*core*'].append("Unsat core: ")
                 print("Unsat core: ")
-                sorted_unsa_core = []
-
-                for i in range(len(unsa_core)):
-                    sorted_unsa_core.append(str(unsa_core[i]))
-
-                sorted_unsa_core.sort()
-
                 for i in range(len(unsa_core)):
                     if unsa_core[i] not in unsa_path:
                         continue
-                    unsat_info_dict['*core*'].append("\t" + str(i+1) + ":" + str(unsa_path[z3.Bool(sorted_unsa_core[i])][0]))
-                    unsa_nodes.append(unsa_path[z3.Bool(sorted_unsa_core[i])][1])
-                    print("\t",i+1,":", unsa_path[z3.Bool(sorted_unsa_core[i])][0])
-
+                    unsat_info_dict['*core*'].append("\t" + str(i+1) + ":" + str(unsa_path[unsa_core[i]]))
+                    print("\t",i+1,":", unsa_path[unsa_core[i]])
+                    # unsa_result.append(unsa_path[unsa_core[i]])
 
                 unsat_info_dict['*statement*'].append("Statements in Unsat Path: ")
                 print("Statements in Unsat Path: ")
-                for node in unsa_nodes:
+                for node in pNodeList:
                     cfgnode_json = node.cfgnode.to_json()
                     at = cfgnode_json['at']
                     ast = cfgnode_json['ast']
-                    unsat_info_dict['*statement*'].append("\tLine " + str(at) + ":" + str(ast))
+                    unsat_info_dict['*statement*'].append("\tLine" + str(at) + ":" + str(ast))
                     print("\tLine", at, ":", ast)
                 # return unsa_result
                 return unsat_info_dict, True
-
             m = self.z3.model()
             solutions = {d.name(): m[d] for d in m.decls()}
             my_args = {k: solutions.get(k, None) for k in self.fn_args}
@@ -628,8 +613,8 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
         # re-initializing does not seem problematic.
         # a = z3.Int('a').get_id() remains the same.
         constraints = self.extract_constraints(path)
-        identifiers = [c for i in constraints for c in used_identifiers(i)]
-        with_types = identifiers_with_types(identifiers, self.used_variables)
+        identifiers = [c for i in constraints for c in used_identifiers(i)]  # <- changes
+        with_types = identifiers_with_types(identifiers, self.used_variables)  # <- changes
         decl = define_symbolic_vars(with_types, '')
         exec(decl)
 
@@ -662,6 +647,10 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
                     for p in np:
                         if path.idx > self.max_depth:
                             break
+                        # if self.can_be_satisfied(p):
+                        #     new_paths.append(p)
+                        # else:
+                        #     break
                         new_paths.append(p)
                 else:
                     completed.append(path)
@@ -671,12 +660,16 @@ class AdvancedSymbolicFuzzer(SimpleSymbolicFuzzer):
 
     def can_be_satisfied(self, p):
         s2 = self.extract_constraints(p.get_path_to_root())
+        # if any(fn_name in s2 for fn_name in self.function_names):
+        #     print("asdasdasdsadas")
+        # print(s2)
         s = z3.Solver()
         identifiers = [c for i in s2 for c in used_identifiers(i)]
         with_types = identifiers_with_types(identifiers, self.used_variables)
         decl = define_symbolic_vars(with_types, '')
         exec(decl)
         exec("s.add(z3.And(%s))" % ','.join(s2), globals(), locals())
+        # sys.exit(0)
         return s.check() == z3.sat
 
     def get_next_path(self):

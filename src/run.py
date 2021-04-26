@@ -60,7 +60,7 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
     results = []
     single_result = {}
     if insert_constant:
-        r_fn_name = function_names[index] + " (CHECK-WITH-CONSTANT-VARIABLES)" 
+        r_fn_name = function_names[index] + " (FUNCTION-CALL-WITH-CONSTANT-VARIABLES)" 
     else:
         r_fn_name = function_names[index]
 
@@ -76,26 +76,25 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
     used_constraint = []
     functions_with_constant = {}
     for i in range(len(paths)):
-        constraint,node_list = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
-
+        # print("i======", i)
+        constraint = asymfz_ct.extract_constraints(paths[i].get_path_to_root())
         constraint_key = '__'.join(constraint)
         if constraint_key in used_constraint or len(constraint) < 2:
             continue
         num_of_paths += 1
         print('\n ---------------------------------------- path: ' + str(num_of_paths)+ ' ---------------------------------------- ')
         used_constraint.append(constraint_key)
-        constraint, function_with_constant, new_node_list = ConstantDetector.check_function_call(constraint, function_names, node_list)
-
+        # print(constraint)
+        constraint, function_with_constant = ConstantDetector.check_function_call(constraint, function_names)
         if insert_constant:
-            constraint = generate_constraint_constant(insert_constant, constraint, new_node_list)
+            constraint = generate_constraint_constant(insert_constant, constraint)
         if check_constant:
             functions_with_constant.update(function_with_constant)
         # constraints
-
-        constraint,clean_node_list = clean_constraint(constraint, function_names, new_node_list)
-
+        constraint = clean_constraint(constraint, function_names)
+        print('Contraint Path: ', constraint)
         # if asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root()):
-        solved_args, unsat = asymfz_ct.solve_constraint(constraint, clean_node_list)
+        solved_args, unsat = asymfz_ct.solve_constraint(constraint, paths[i].get_path_to_root())
         solved_args['*constraint*'] = constraint
         if insert_constant:
             solved_args['*constant*'] = insert_constant
@@ -113,13 +112,13 @@ def analyze_program(code_string, function_names, index, py_cfg, max_depth, max_t
         print('########################## RE-CHECK FUNCTION CALL WITH CONSTANT VALUES ########################## ')
         results += recheck_func_with_constant(functions_with_constant, code_string,\
                                 function_names, index, py_cfg, max_depth, max_tries, max_iter)
+
     return results
 
 
 # we assume for loop as one time iteration
-def clean_constraint(constraint, function_names,node_list):
+def clean_constraint(constraint, function_names):
     new_contraint = []
-    clean_node_list = []
 
     for i, ct in enumerate(constraint):
         # remove for loop 
@@ -131,8 +130,7 @@ def clean_constraint(constraint, function_names,node_list):
             continue
         else:
             new_contraint.append(ct)
-            clean_node_list.append(node_list[i])
-    return new_contraint, clean_node_list
+    return new_contraint
 
 
 # re-check some functions which with constant input argument values
@@ -152,7 +150,7 @@ def recheck_func_with_constant(functions_with_constant, code_string,\
 
 
 # generate additional consraints for constant values
-def generate_constraint_constant(insert_constant, constraint,node_list):
+def generate_constraint_constant(insert_constant, constraint):
     constraint_args = constraint[0]
     if 'z3.And(' in constraint_args:
         args = constraint_args.split('(')[1].split(')')[0].split(',')
@@ -166,7 +164,6 @@ def generate_constraint_constant(insert_constant, constraint,node_list):
                     continue
                 temp = renamed_variable + ' == ' + str(y)
                 constraint.insert(1, temp)
-                node_list.insert(1,"")
     return constraint
 
 
@@ -206,19 +203,26 @@ def generate_report(results, output_path, input_program):
                     f.write('\n################ FUNCTION NAME: ' + fn_name +  ' ################\n')
                     for elements in result[fn_name]:
                         if '*core*' in elements:
+                            f.write("\n================== ERROR: UNSAT PATH FOUND ===================\n")
                             if '*constant*' in elements:
-                                f.write('\n========================================\n')
+                                f.write('------ constraint values: \n')
                                 f.write( 'Variables: ' + ', '.join(elements['*constant*'])+ '\n')
-                            f.write("============ Contraint Path ============\n")
-                            # f.write( 'Constraints: \n')   
+                            break_point = 0
+                            f.write('------ constraint path: \n')
                             for s in elements['*con*']:
-                                f.write(s + '\n')
+                                f.write('\t' + s + '\n')
+                            f.write('------ unsat core: \n')
                             for s in elements['*core*']:
                                 f.write(s + '\n')
-                            f.write('----------------------------------------------\n')
+                                break_point += 1
+                            count = 0
+                            f.write('------ statement: \n')
                             for s in elements['*statement*']:
+                                count += 1
+                                if count >= break_point:
+                                    break
                                 f.write(s + '\n')
-                            f.write('========================================\n\n\n')
+                            f.write('==============================================================\n\n')
                     f.write('\n' + '#' * (len(fn_name)+48) +  '\n')
 
     with open(filename, 'a+') as f: 
