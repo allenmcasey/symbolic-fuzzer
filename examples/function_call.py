@@ -10,6 +10,8 @@ def func_a(a: int):
 
 
 def func_b(b: int):
+    for i in range(5):
+        b += 2
     b = 11
     if b > 10:
         return True
